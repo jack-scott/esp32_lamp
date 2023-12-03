@@ -1,5 +1,6 @@
 #include <Wire.h>
 #include <FastLED.h>
+#include <hsv_to_rgb.h>
 
 // #define CAMERA_MODEL_TTGO_T_CAMERA_PLUS
 
@@ -70,127 +71,6 @@ std::pair<float, int> bounce(float input_val, int last_direction, float min, flo
     return std::make_pair(input_val, last_direction);
 }
 
-
-
-struct RGB_colour
-{
-    int r;
-    int g;
-    int b;
-};
-
-struct HSV_colour
-{
-    int h;
-    int s;
-    int v;
-};
-
-struct HSV_float
-{
-    float h;
-    float s;
-    float v;
-};
-
-class ColorHSV {
-public:
-    /**
-     * https://en.wikipedia.org/wiki/HSL_and_HSV#Color_conversion_formulae
-    */
-    ColorHSV(HSV_float hsv_input) {
-        this->hsv.h = hsv_input.h;
-        HSV_float bounds = applyBounds(hsv_input);
-        this->hsv.s = bounds.s;
-        this->hsv.v = bounds.v;
-    }
-
-    HSV_colour applyBounds(HSV_colour hsv_input) {
-        HSV_colour hsv_out;
-        hsv_out.h = hsv_input.h % 360;
-        hsv_out.s = std::min(255, std::max(0, hsv_input.s));
-        hsv_out.v = std::min(255, std::max(0, hsv_input.v));
-        return hsv_out;
-    }
-
-    HSV_float applyBounds(HSV_float hsv_input) {
-        HSV_float hsv_out;
-        hsv_out.h = hsv_input.h - std::remainder(hsv_input.h, 360.0f);
-        hsv_out.s = std::min(255.0f, std::max(0.0f, hsv_input.s));
-        hsv_out.v = std::min(255.0f, std::max(0.0f, hsv_input.v));
-        return hsv_out;
-    }
-
-    HSV_float normalize(HSV_colour hsv_input) {
-        HSV_float hsv_out;
-        hsv_out.h = static_cast<float>(hsv_input.h);
-        hsv_out.s = static_cast<float>(hsv_input.s) / 255;
-        hsv_out.v = static_cast<float>(hsv_input.v) / 255;
-        return hsv_out;
-    }
-    
-    HSV_float normalize(HSV_float hsv_input) {
-        HSV_float hsv_out;
-        hsv_out.h = hsv_input.h;
-        hsv_out.s = hsv_input.s / 255.0f;
-        hsv_out.v = hsv_input.v / 255.0f;
-        return hsv_out;
-    }
-
-    float hsvToComponent(HSV_float hsv_input, float k) {
-        return ( hsv_input.v - hsv_input.v * hsv_input.s * std::max(float(0), std::min(k, float(4) - k)) );
-    }
-
-    void set_h(float h) {
-        this->hsv.h = h;
-    }
-
-    void set_s(float s) {
-        this->hsv.s = s;
-    }
-
-    void set_v(float v) {
-        this->hsv.v = v;
-    }
-    
-    float get_h() {
-        return this->hsv.h;
-    }
-
-    float get_s() {
-        return this->hsv.s;
-    }
-
-    float get_v() {
-        return this->hsv.v;
-    }
-
-
-    RGB_colour toRGB() {
-        HSV_float bounded_hsv = applyBounds(this->hsv);
-
-        HSV_float normalized_hsv = normalize(bounded_hsv);
-
-        float r_k = std::remainder((5 + normalized_hsv.h / 60), 6);
-        float r = hsvToComponent(normalized_hsv, r_k);
-
-        float g_k = std::remainder((3 + normalized_hsv.h / 60), 6);
-        float g = hsvToComponent(normalized_hsv, g_k);
-
-        float b_k = std::remainder((1 + normalized_hsv.h / 60), 6);
-        float b = hsvToComponent(normalized_hsv, b_k);
-
-        RGB_colour rgb_out;
-        rgb_out.r = static_cast<int>(r * 255);
-        rgb_out.g = static_cast<int>(g * 255);
-        rgb_out.b = static_cast<int>(b * 255);
-
-        return rgb_out;
-    }
-
-private:
-    HSV_float hsv;
-};
 
 
 
