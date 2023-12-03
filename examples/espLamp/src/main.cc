@@ -1,6 +1,8 @@
 #include <Wire.h>
 #include <FastLED.h>
-#include <hsv_to_rgb.h>
+// #include <hsv_to_rgb.h>
+#include <custom_types.h>   
+#include <colour_utils.h>
 
 // #define CAMERA_MODEL_TTGO_T_CAMERA_PLUS
 
@@ -72,9 +74,6 @@ std::pair<float, int> bounce(float input_val, int last_direction, float min, flo
 }
 
 
-
-
-
 class DeliciousFrostyFruit {
 public:
     CRGB* strip;
@@ -84,9 +83,9 @@ public:
     float h_max;
     float s_min;
     float s_max;
-    float v;
 
-    ColorHSV cmd_colour;
+    HSV_float cmd_colour;
+
     float update_speed;
     float h_increment;
     float s_increment;
@@ -94,21 +93,19 @@ public:
     DeliciousFrostyFruit(CRGB* strip, int num_leds):
         strip(strip),
         num_leds(num_leds),
-        cmd_colour(ColorHSV(HSV_float{0.0f, 0.0f, 0.0f})){
-
+        cmd_colour({0.0f, 0.0f, 0.0f}) {
         this->h_min = 8.0f;
         this->h_max = 12.0f;
         this->s_min = 238.0f;
         this->s_max = 245.0f;
-        this->v = 50.0f;
 
         float h_start = static_cast<float>(random(this->h_min, this->h_max));
         float s_start = static_cast<float>(random(this->s_min, this->s_max));
 
         
-        this->cmd_colour.set_h(h_start);
-        this->cmd_colour.set_s(s_start);
-        this->cmd_colour.set_v(this->v);
+        this->cmd_colour.h = h_start;
+        this->cmd_colour.s = s_start;
+        this->cmd_colour.v = 50.0f;
 
         this->update_speed = 0.08f;
         this->h_increment = 0.1;
@@ -126,27 +123,29 @@ public:
             curr_led = bounce_result.first;
             led_last_direction = bounce_result.second;
 
-            std::pair<float, int> bounce_h_result = bounce(this->cmd_colour.get_h(), h_last_direction, this->h_min, this->h_max, this->h_increment);
-            this->cmd_colour.set_h(bounce_h_result.first);
+            std::pair<float, int> bounce_h_result = bounce(this->cmd_colour.h, h_last_direction, this->h_min, this->h_max, this->h_increment);
+            this->cmd_colour.h = bounce_h_result.first;
             h_last_direction = bounce_h_result.second;
 
-            std::pair<float, int> bounce_s_result = bounce(this->cmd_colour.get_s(), s_last_direction, this->s_min, this->s_max, this->s_increment);
-            this->cmd_colour.set_s(bounce_s_result.first);
+            std::pair<float, int> bounce_s_result = bounce(this->cmd_colour.s, s_last_direction, this->s_min, this->s_max, this->s_increment);
+            this->cmd_colour.s = bounce_s_result.first;
             s_last_direction = bounce_s_result.second;
 
-            RGB_colour rgb_out = this->cmd_colour.toRGB();
-
-            this->strip[curr_led] = CRGB(rgb_out.r, rgb_out.g, rgb_out.b);
+            this->cmd_colour = applyBounds(this->cmd_colour);
+            CHSV hsv_out = CHSV(this->cmd_colour.h, this->cmd_colour.s, this->cmd_colour.v);
+            CRGB rgb_out;
+            // hsv2rgb_rainbow(hsv_out, rgb_out);       //retains more yellow
+            hsv2rgb_spectrum(hsv_out, rgb_out);         //original colourspace for frosty fruit
+            this->strip[curr_led] = rgb_out;
 
             delay(this->update_speed * 1000);
             FastLED.show();
-            Serial.print("h:"); Serial.println(this->cmd_colour.get_h());
-            Serial.print("s:");Serial.println(this->cmd_colour.get_s());
-            Serial.print("v:");Serial.println(this->cmd_colour.get_v());
-            Serial.print("r:");Serial.println(rgb_out.r);
-            Serial.print("g:");Serial.println(rgb_out.g);
-            Serial.print("b:");Serial.println(rgb_out.b);
-            Serial.println("-----");
+            //print out the hsv before after and rgb
+            Serial.printf("h: %f, s: %f, v: %f\n", this->cmd_colour.h, this->cmd_colour.s, this->cmd_colour.v);
+            Serial.printf("h: %d, s: %d, v: %d\n", hsv_out.h, hsv_out.s, hsv_out.v);
+            Serial.printf("r: %d, g: %d, b: %d\n", rgb_out.r, rgb_out.g, rgb_out.b);
+
+
         }
     }
 };

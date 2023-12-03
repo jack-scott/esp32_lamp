@@ -22,6 +22,7 @@ HSV_float ColorHSV::applyBounds(HSV_float hsv_input) {
 }
 
 
+
 HSV_float ColorHSV::normalize(HSV_float hsv_input) {
     HSV_float hsv_out;
     hsv_out.h = hsv_input.h;

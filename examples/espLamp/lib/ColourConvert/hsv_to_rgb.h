@@ -1,24 +1,5 @@
 #pragma once
-
-struct RGB_colour{
-    int r;
-    int g;
-    int b;
-};
-
-struct HSV_colour{
-    int h;
-    int s;
-    int v;
-};
-
-
-struct HSV_float{
-    float h;
-    float s;
-    float v;
-};
-
+#include <custom_types.h>
 
 class ColorHSV {
 public:
