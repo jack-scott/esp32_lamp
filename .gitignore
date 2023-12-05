@@ -10,3 +10,9 @@ __pycache__/
 *.pyw
 *.pyz
 *.pyzw
+
+*.svg
+*.png
+*.jpg
+*.ico
+*.icns
