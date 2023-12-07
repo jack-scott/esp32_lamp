@@ -1,124 +1,175 @@
-/*********
-  Rui Santos
-  Complete project details at https://randomnerdtutorials.com  
-*********/
+// Following the instrcutions and boilerplate from this repo https://github.com/KrisKasprzak/ESP32_WebPage/tree/main
+
+
 
 // Load Wi-Fi library
 #include <WiFi.h>
+#include <WebServer.h>  // standard library
+#include "index.h"      // this is the web page you will serve up
 
-// Replace with your network credentials
-const char* ssid     = "ESP32-Access-Point";
-const char* password = "123456789";
+#define USE_INTRANET
+
+// replace this with your homes intranet connect parameters
+#define LOCAL_SSID "NetComm 4592"
+#define LOCAL_PASS "senahesumf"
+
+// once  you are read to go live these settings are what you client will connect to
+#define AP_SSID "ESP32-Access-Point"
+#define AP_PASS "123456789"
+
+IPAddress assigned_ip;
+
+// just some buffer holder for char operations
+char buf[32];
+// the XML array size needs to be bigger that your maximum expected size. 2048 is way too big for this example
+char XML[2048];
+int brightness = 0;
+
 
 // Set web server port number to 80
-WiFiServer server(80);
-
-// Variable to store the HTTP request
-String header;
-
-// Auxiliar variables to store the current output state
-String output26State = "off";
-String output27State = "off";
-
-// Assign output variables to GPIO pins
-const int output26 = 26;
-const int output27 = 27;
+WebServer server(80);
 
 
-// Decode HTTP GET value
-String redString = "0";
-String greenString = "0";
-String blueString = "0";
-int pos1 = 0;
-int pos2 = 0;
-int pos3 = 0;
-int pos4 = 0;
+
+
+
+// code to send the main web page
+// PAGE_MAIN is a large char defined in index.h
+void SendWebsite() {
+  Serial.println("sending web page");
+  // you may have to play with this value, big pages need more porcessing time, and hence
+  // a longer timeout that 200 ms
+  server.send(200, "text/html", PAGE_MAIN);
+
+}
+
+// code to send the main web page
+// I avoid string data types at all cost hence all the char mainipulation code
+void SendXML() {
+
+  // Serial.println("sending xml");
+
+  strcpy(XML, "<?xml version = '1.0'?>\n<Data>\n");
+
+  // // send bitsA0
+  // sprintf(buf, "<B0>%d</B0>\n", BitsA0);
+  // strcat(XML, buf);
+  // // send Volts0
+  // sprintf(buf, "<V0>%d.%d</V0>\n", (int) (VoltsA0), abs((int) (VoltsA0 * 10)  - ((int) (VoltsA0) * 10)));
+  // strcat(XML, buf);
+
+  // // send bits1
+  // sprintf(buf, "<B1>%d</B1>\n", BitsA1);
+  // strcat(XML, buf);
+  // // send Volts1
+  // sprintf(buf, "<V1>%d.%d</V1>\n", (int) (VoltsA1), abs((int) (VoltsA1 * 10)  - ((int) (VoltsA1) * 10)));
+  // strcat(XML, buf);
+
+  // // show led0 status
+  // if (LED0) {
+  //   strcat(XML, "<LED>1</LED>\n");
+  // }
+  // else {
+  //   strcat(XML, "<LED>0</LED>\n");
+  // }
+
+  // if (SomeOutput) {
+  //   strcat(XML, "<SWITCH>1</SWITCH>\n");
+  // }
+  // else {
+  //   strcat(XML, "<SWITCH>0</SWITCH>\n");
+  // }
+
+  strcat(XML, "</Data>\n");
+  // wanna see what the XML code looks like?
+  // actually print it to the serial monitor and use some text editor to get the size
+  // then pad and adjust char XML[2048]; above
+  Serial.println(XML);
+
+  // you may have to play with this value, big pages need more porcessing time, and hence
+  // a longer timeout that 200 ms
+  server.send(200, "text/xml", XML);
+
+
+}
+
+// function managed by an .on method to handle slider actions on the web page
+// this example will get the passed string called VALUE and conver to a pwm value
+// and control the fan speed
+void UpdateSlider() {
+
+  // many I hate strings, but wifi lib uses them...
+  String t_state = server.arg("VALUE");
+
+  // conver the string sent from the web page to an int
+  brightness = t_state.toInt();
+  Serial.print("UpdateSlider"); Serial.println(brightness);
+
+
+  // YOU MUST SEND SOMETHING BACK TO THE WEB PAGE--BASICALLY TO KEEP IT LIVE
+
+  // option 1: send no information back, but at least keep the page live
+  // just send nothing back
+  // server.send(200, "text/plain", ""); //Send web page
+
+  // option 2: send something back immediately, maybe a pass/fail indication, maybe a measured value
+  // here is how you send data back immediately and NOT through the general XML page update code
+  // my simple example guesses at fan speed--ideally measure it and send back real data
+  // i avoid strings at all caost, hence all the code to start with "" in the buffer and build a
+  // simple piece of data
+  strcpy(buf, "");
+  sprintf(buf, "%d", brightness);
+  sprintf(buf, buf);
+
+  // now send it back
+  server.send(200, "text/plain", buf); //Send web page
+
+}
+
 
 void setup() {
-  Serial.begin(115200);
-  // Initialize the output variables as outputs
-  pinMode(output26, OUTPUT);
-  pinMode(output27, OUTPUT);
-  // Set outputs to LOW
-  digitalWrite(output26, LOW);
-  digitalWrite(output27, LOW);
+    Serial.begin(115200);
+    
+    #ifdef USE_INTRANET
+    WiFi.begin(LOCAL_SSID, LOCAL_PASS);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.print("IP address: "); Serial.println(WiFi.localIP());
+    assigned_ip = WiFi.localIP();
+    #endif
 
-  // Connect to Wi-Fi network with SSID and password
-  Serial.print("Setting AP (Access Point)…");
-  // Remove the password parameter, if you want the AP (Access Point) to be open
-  WiFi.softAP(ssid, password);
+    // if you don't have #define USE_INTRANET, here's where you will creat and access point
+    // an intranet with no internet connection. But Clients can connect to your intranet and see
+    // the web page you are about to serve up
+    #ifndef USE_INTRANET
+    // Replace with your network credentials
+    WiFi.softAP(AP_SSID, AP_PASS);
+    delay(100);
+    WiFi.softAPConfig(PageIP, gateway, subnet);
+    delay(100);
+    assigned_ip = WiFi.softAPIP();
+    Serial.print("IP address: "); Serial.println(assigned_ip);
+    #endif
 
-  IPAddress IP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(IP);
-  
-  server.begin();
+    // these calls will handle data coming back from your web page
+    // this one is a page request, upon ESP getting / string the web page will be sent
+    server.on("/", SendWebsite);
+    // upon esp getting /XML string, ESP will build and send the XML, this is how we refresh
+    // just parts of the web page
+    server.on("/xml", SendXML);
+    // upon ESP getting /UPDATE_SLIDER string, ESP will execute the UpdateSlider function
+    // same notion for the following .on calls
+    // add as many as you need to process incoming strings from your web page
+    // as you can imagine you will need to code some javascript in your web page to send such strings
+    // this process will be documented in the SuperMon.h web page code
+    server.on("/UPDATE_SLIDER", UpdateSlider);
+
+    server.begin();
 }
 
 void loop(){
-  WiFiClient client = server.available();   // Listen for incoming clients
-
-  if (client) {                             // If a new client connects,
-    Serial.println("New Client.");          // print a message out in the serial port
-    String currentLine = "";                // make a String to hold incoming data from the client
-    while (client.connected()) {            // loop while the client's connected
-      if (client.available()) {             // if there's bytes to read from the client,
-        char c = client.read();             // read a byte, then
-        Serial.write(c);                    // print it out the serial monitor
-        header += c;
-        if (c == '\n') {                    // if the byte is a newline character
-          // if the current line is blank, you got two newline characters in a row.
-          // that's the end of the client HTTP request, so send a response:
-          if (currentLine.length() == 0) {
-            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-            // and a content-type so the client knows what's coming, then a blank line:
-            client.println("HTTP/1.1 200 OK");
-            client.println("Content-type:text/html");
-            client.println("Connection: close");
-            client.println();
-                   
-            // Display the HTML web page
-            client.println("<!DOCTYPE html><html>");
-            client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
-            client.println("<link rel=\"icon\" href=\"data:,\">");
-            client.println("<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css\">");
-            client.println("<script src=\"https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.0.4/jscolor.min.js\"></script>");
-            client.println("</head><body><div class=\"container\"><div class=\"row\"><h1>ESP Color Picker</h1></div>");
-            client.println("<input name=\"Color Picker\" type=\"color\"/>");
-            
-            // The HTTP response ends with another blank line
-            client.println();
-
-            // Request sample: /?r201g32b255&
-            // Red = 201 | Green = 32 | Blue = 255
-            if(header.indexOf("GET /?r") >= 0) {
-              pos1 = header.indexOf('r');
-              pos2 = header.indexOf('g');
-              pos3 = header.indexOf('b');
-              pos4 = header.indexOf('&');
-              redString = header.substring(pos1+1, pos2);
-              greenString = header.substring(pos2+1, pos3);
-              blueString = header.substring(pos3+1, pos4);
-              Serial.println(redString.toInt());
-              Serial.println(greenString.toInt());
-              Serial.println(blueString.toInt());
-
-            }
-            // Break out of the while loop
-            break;
-          } else { // if you got a newline, then clear currentLine
-            currentLine = "";
-          }
-        } else if (c != '\r') {  // if you got anything else but a carriage return character,
-          currentLine += c;      // add it to the end of the currentLine
-        }
-      }
-    }
-    // Clear the header variable
-    header = "";
-    // Close the connection
-    client.stop();
-    Serial.println("Client disconnected.");
-    Serial.println("");
-  }
+   server.handleClient();
 }
+
