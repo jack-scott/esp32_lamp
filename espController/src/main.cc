@@ -17,7 +17,8 @@ OneButton *button;
 String myMacAddress = "";
 String myIpAddress = "";
 
-uint8_t targetMacAddress[] = {0xCC, 0x50, 0xE3, 0xB5, 0xF9, 0x38};
+uint8_t targetMacAddress[] = {0x84, 0x0D, 0x8E, 0x39, 0xD6, 0x8C}; //tenergy
+// uint8_t targetMacAddress[] = {0xCC, 0x50, 0xE3, 0xB5, 0xF9, 0x38};
 
 uint8_t last_brightness = 50;
 int direction = 1;

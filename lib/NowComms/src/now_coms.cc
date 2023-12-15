@@ -22,6 +22,11 @@ void setupEspNow()
     }
 }
 
+void printMACaddress(){
+  Serial.print("MAC address: ");
+  Serial.println(WiFi.macAddress());
+}
+
 void registerReceiveCb(void (*onDataRecv)(const uint8_t*, const uint8_t*, int)){
   esp_now_register_recv_cb(onDataRecv);
 }
