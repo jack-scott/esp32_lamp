@@ -16,7 +16,7 @@
 #endif
 
 #ifdef ALIEXPRESS_ESP32C3
-#define NUM_LEDS 22
+#define NUM_LEDS 24
 #define LED_PIN 6
 #endif
 
@@ -125,7 +125,7 @@ public:
         for (int i = 0; i < NUM_LEDS; i++) {
             float_leds[i].h = start_h;
             float_leds[i].s = start_s;
-            float_leds[i].v = state.brightness;
+            float_leds[i].v = state.fade_state.curr_brightness;
         }
     }
 
@@ -144,6 +144,9 @@ public:
         std::pair<float, int> bounce_s_result = bounce(last_led.s, state.fade_state.s_last_direction, this->s_min_, this->s_max_, this->s_increment_);
         float_leds[state.fade_state.curr_led].s = bounce_s_result.first;
         state.fade_state.s_last_direction = bounce_s_result.second;
+
+
+        float_leds[state.fade_state.curr_led].v = state.fade_state.curr_brightness;
 
         float_leds[state.fade_state.curr_led] = applyBounds(float_leds[state.fade_state.curr_led]);
         CHSV hsv_out = CHSV(float_leds[state.fade_state.curr_led].h, float_leds[state.fade_state.curr_led].s, float_leds[state.fade_state.curr_led].v);
@@ -169,117 +172,25 @@ private:
 
 GentleColourChange frosty_fruit;
 
-
-class DeliciousFrostyFruit {
-public:
-    CRGB* strip;
-    int num_leds;
-
-    float h_min;
-    float h_max;
-    float s_min;
-    float s_max;
-
-    HSV_float cmd_colour;
-
-    float update_speed;
-    float h_increment;
-    float s_increment;
-
-    bool state;
-
-    DeliciousFrostyFruit(CRGB* strip, int num_leds):
-        strip(strip),
-        num_leds(num_leds),
-        cmd_colour({0.0f, 0.0f, 0.0f}),
-        state(false) {
-        this->h_min = 8.0f;
-        this->h_max = 12.0f;
-        this->s_min = 238.0f;
-        this->s_max = 245.0f;
-
-        float h_start = static_cast<float>(random(this->h_min, this->h_max));
-        float s_start = static_cast<float>(random(this->s_min, this->s_max));
-
-        
-        this->cmd_colour.h = h_start;
-        this->cmd_colour.s = s_start;
-        this->cmd_colour.v = 50.0f;
-
-        this->update_speed = 0.08f;
-        this->h_increment = 0.1;
-        this->s_increment = 0.05f;
-    }
-
-    void setValue(float value) {
-        this->cmd_colour.v = value;
-    }
-
-    void toggleState() {
-        this->state = !this->state;
-    }
-
-    void run() {
-        int h_last_direction = 1;
-        int s_last_direction = 1;
-        int led_last_direction = 1;
-        int curr_led = 0;
-        state = true;
-
-        while (true) {
-
-            std::pair<float, int> bounce_result = bounce(curr_led, led_last_direction, 0, this->num_leds - 1, 1);
-            curr_led = bounce_result.first;
-            led_last_direction = bounce_result.second;
-            CRGB rgb_out;
-
-            if (state == true) {
-              std::pair<float, int> bounce_h_result = bounce(this->cmd_colour.h, h_last_direction, this->h_min, this->h_max, this->h_increment);
-              this->cmd_colour.h = bounce_h_result.first;
-              h_last_direction = bounce_h_result.second;
-
-              std::pair<float, int> bounce_s_result = bounce(this->cmd_colour.s, s_last_direction, this->s_min, this->s_max, this->s_increment);
-              this->cmd_colour.s = bounce_s_result.first;
-              s_last_direction = bounce_s_result.second;
-
-              this->cmd_colour = applyBounds(this->cmd_colour);
-              CHSV hsv_out = CHSV(this->cmd_colour.h, this->cmd_colour.s, this->cmd_colour.v);
-              // hsv2rgb_rainbow(hsv_out, rgb_out);       //retains more yellow
-              hsv2rgb_spectrum(hsv_out, rgb_out);         //original colourspace for frosty fruit
-            }else{
-              rgb_out = CRGB(0,0,0);
-            }
-
-            this->strip[curr_led] = rgb_out;
-
-            delay(this->update_speed * 1000);
-            FastLED.show();
-
-        }
-    }
-};
-
-
-DeliciousFrostyFruit frosty(leds, NUM_LEDS);
-
+LampControl local_state;
 
 void recieveCb(const uint8_t * mac_addr, const uint8_t *incomingData, int len) {
-  LampControl myData;
-  memcpy(&myData, incomingData, sizeof(myData));
+//   LampControl myData;
+  memcpy(&local_state, incomingData, sizeof(local_state));
   // Update the structures with the new incoming data
   Serial.print("state: ");
-  Serial.println(myData.state);
+  Serial.println(local_state.state);
   Serial.print("brightness: ");
-  Serial.println(myData.brightness);
+  Serial.println(local_state.brightness);
   Serial.println();
 
-  if (myData.state == 1) {
-    toggleState();
-  }
+//   if (local_state.state == 1) {
+//     toggleState();
+//   }
 
-  if(myData.enable_web == 1){
-    state.web_enabled = !state.web_enabled;
-  }
+//   if(local_state.enable_web == 1){
+//     state.web_enabled = !state.web_enabled;
+//   }
 }
 
 void runColourModifier(){
@@ -304,18 +215,40 @@ void runStateModifier(){
     case SystemState::OFF:
         break;
     case SystemState::FADEIN:
+        // if(state.fade_state.curr_brightness == 0 && state.sys_state != SystemState::OFF){
+        //     state.fade_state.led_last_direction = !state.fade_state.led_last_direction;
+        //     state.fade_state.curr_brightness = state.brightness;
+        // }else if(state.sys_state == SystemState::OFF)
+        // {
+        state.fade_state.last_led=0;
+        float_leds[state.fade_state.last_led].v = state.brightness;
+        // first_led.v = state.brightness;first_led
+        state.fade_state.curr_led = 1;
+        state.fade_state.led_last_direction = -1;
+        state.fade_state.curr_brightness = state.brightness;
+    // }
+    // else if (state.fade_state.curr_brightness == state.brightness && state.fade_state.curr_led == NUM_LEDS)
+    // {
+        state.sys_state = SystemState::NOMINAL;
+        // }
         break;
     case SystemState::FADEOUT:
-        if(state.brightness > 0){
-            state.brightness -= 1;
-        }else{
+        // if(state.fade_state.curr_brightness > 0){
+            state.fade_state.last_led=NUM_LEDS;
+            float_leds[state.fade_state.last_led].v = state.brightness;
+            // first_led.v = state.brightness;
+            state.fade_state.curr_led = NUM_LEDS - 1;
+            state.fade_state.led_last_direction = -1;
+            state.fade_state.curr_brightness = 0;
+        // }else if (state.fade_state.curr_brightness == 0 &&  state.fade_state.curr_led == 0)
+        // {
             state.sys_state = SystemState::OFF;
-        }
+        // }
         break;
     case SystemState::NOMINAL:
         break;
     default:
-        Serial.println("Unknown state somehow");
+        Serial.println("UnknowUnknownn state somehow");
         break;
     }
 }
@@ -393,17 +326,30 @@ void printLEDsfast(CRGB* leds, int num_leds){
     }
 }
 
+void checkLocalState(){
+    if (local_state.state == 1) {
+        toggleState();
+        local_state.state = 0;
+    }
+
+    if(local_state.enable_web == 1){
+        state.web_enabled = !state.web_enabled;
+        local_state.enable_web = 0;
+    }
+}
+
 void loop() {
-    runColourModifier();
-    runStateModifier();
+    // checkLocalState();
+    // runColourModifier();
+    // runStateModifier();
     frosty_fruit.tick();
+    // leds[0] = CRGB(0,0,0);
     FastLED.show();
     printState(state);
     // printLEDsfast(leds, NUM_LEDS);
     // printLEDsHSV(float_leds, NUM_LEDS);
     // delay(1000);
     delay(0.08*1000);
-    // frosty.run();
 }
 
 /*

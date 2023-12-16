@@ -12,6 +12,12 @@
 #define LED_PIN 8
 #endif
 
+#ifdef EXTERNAL_WAKE
+esp_sleep_enable_ext0_wakeup(PIN_INPUT, 0)
+#endif
+
+#define MILLI_TILL_SLEEP 1000
+
 // some dirty global stuff
 OneButton *button;
 String myMacAddress = "";
@@ -91,10 +97,21 @@ void onTransmitCB(const uint8_t *mac_addr, esp_now_send_status_t status) {
   ledShowStatus(status == ESP_NOW_SEND_SUCCESS ? 1 : 0);
 }
 
+
+void sleepDevice(){
+  Serial.println("Sleeping!!!!");
+  delay(1000);
+  esp_deep_sleep_start();
+}
+hw_timer_t* click_timer;
+
 void setup()
 {
+  delay(1000);
+  //TODO: Setup a timer and callback to put the device back to sleep 
   Serial.begin(115200);
   Serial.println("One Button Example with custom input.");
+  // timerAttachInterrupt(click_timer, sleepDevice, true);
 
   // setup your own source of input
   #ifdef CAMERA_MODEL_TTGO_T_CAMERA_PLUS
@@ -122,20 +139,23 @@ void setup()
 
   // digitalWrite(LED_PIN, HIGH);
   pinMode(LED_PIN, OUTPUT);
-
+  click_timer = timerBegin(1, 128, 1000);
 } // setup()
 
 void loop()
 {
+  Serial.println("Loop..");
   // read your own source of input:
   bool isPressed = (digitalRead(PIN_INPUT) == LOW);
 
   for (int i = 0; i < 20; i++) {
     button->tick(isPressed);
   }
-
-
-
   // call tick frequently with current push-state of the input
   button->tick(isPressed);
+  #ifdef EXTERNAL_WAKE
+  if(timerReadMilis(click_timer) > MILLI_TILL_SLEEP ){
+    sleepDevice();
+  }
+  #endif
 } // loop()
