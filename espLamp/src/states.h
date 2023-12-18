@@ -14,11 +14,10 @@ enum SystemState{
 };
 
 typedef struct FadeState{
-    bool h_last_direction;
-    bool s_last_direction;
-    bool led_last_direction;
+    int h_last_direction;
+    int s_last_direction;
+    int led_last_direction;
     int curr_led;
-    int last_led;
     int curr_brightness;
 } FadeState;
 
@@ -34,15 +33,14 @@ typedef struct LampState {
 
 
 void loadDefaults(LampState& curr_state){
-    curr_state.colour_mode = BLUE;
+    curr_state.colour_mode = FROSTYFRUIT;
     curr_state.sys_state = NOMINAL;
     curr_state.brightness = 50;
 
     curr_state.fade_state.h_last_direction = 1;
     curr_state.fade_state.s_last_direction = 1;
     curr_state.fade_state.led_last_direction = 1;
-    curr_state.fade_state.last_led = 0;
-    curr_state.fade_state.curr_led = 1;
+    curr_state.fade_state.curr_led = 0;
     curr_state.fade_state.curr_brightness = curr_state.brightness;
 }
 

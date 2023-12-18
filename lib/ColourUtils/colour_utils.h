@@ -7,7 +7,7 @@
 
 HSV_uint8 floatToFastLEDFormat(HSV_float hsv_input){
     HSV_uint8 hsv_out;
-    hsv_out.h = static_cast<uint8_t>(hsv_input.h / 360.0f * 255.0f);
+    hsv_out.h = static_cast<uint8_t>((hsv_input.h / 360.0f) * 255.0f);
     hsv_out.s = static_cast<uint8_t>(hsv_input.s);
     hsv_out.v = static_cast<uint8_t>(hsv_input.v);
     return hsv_out;

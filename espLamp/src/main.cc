@@ -6,23 +6,28 @@
 #include <lamp_control_types.h>
 #include "states.h"
 #include <Preferences.h>
+#include <WiFi.h>
+#include <WebServer.h>  // standard library
 
 
-#define FASTLED_ESP32_I2S
+
 
 #ifdef CAMERA_MODEL_TTGO_T_CAMERA_PLUS
 #define NUM_LEDS 22
 #define LED_PIN 23
+#define FASTLED_ESP32_I2S
 #endif
 
 #ifdef ALIEXPRESS_ESP32C3
 #define NUM_LEDS 24
-#define LED_PIN 6
+#define LED_PIN 10
+// #define LED_PIN 6
 #endif
 
 #ifdef TENERGY_ESP32S3
 #define NUM_LEDS 12
 #define LED_PIN 23
+#define FASTLED_ESP32_I2S
 #endif
 
 LampState state;
@@ -100,7 +105,7 @@ std::pair<float, int> bounce(float input_val, int last_direction, float min, flo
     return std::make_pair(input_val, last_direction);
 }
 
-
+HSV_float curr_colour = {0, 0, 0};
 class GentleColourChange {
 public:
     GentleColourChange(){
@@ -127,29 +132,39 @@ public:
             float_leds[i].s = start_s;
             float_leds[i].v = state.fade_state.curr_brightness;
         }
+        curr_colour.h = start_h;
+        curr_colour.s = start_s;
+        curr_colour.v = state.fade_state.curr_brightness;
     }
 
     void tick(){
-        state.fade_state.last_led = state.fade_state.curr_led;
-        HSV_float last_led = float_leds[state.fade_state.last_led];
-        std::pair<float, int> bounce_result = bounce(state.fade_state.curr_led, state.fade_state.led_last_direction, 0, NUM_LEDS - 1, 1);
-        state.fade_state.curr_led = bounce_result.first;
-        state.fade_state.led_last_direction = bounce_result.second;
+        
+        // Something wrong about how the last colour is tracked withthis logic, leads to colours staying around the
+        // same area for a while since the last colour is not updated properly
 
-        // if (state == true) {
+        // int last_led_ind = 0;
+        // if (state.fade_state.curr_led > 0) {
+        //     last_led_ind = state.fade_state.curr_led - state.fade_state.led_last_direction;
+        // }
+        // Serial.print("last_led_ind: ");
+        // Serial.println(last_led_ind);
+        
+        HSV_float last_led = curr_colour;
+
         std::pair<float, int> bounce_h_result = bounce(last_led.h, state.fade_state.h_last_direction, this->h_min_, this->h_max_, this->h_increment_);
-        float_leds[state.fade_state.curr_led].h = bounce_h_result.first;
+        curr_colour.h = bounce_h_result.first;
         state.fade_state.h_last_direction = bounce_h_result.second;
 
         std::pair<float, int> bounce_s_result = bounce(last_led.s, state.fade_state.s_last_direction, this->s_min_, this->s_max_, this->s_increment_);
-        float_leds[state.fade_state.curr_led].s = bounce_s_result.first;
+        curr_colour.s = bounce_s_result.first;
         state.fade_state.s_last_direction = bounce_s_result.second;
 
 
-        float_leds[state.fade_state.curr_led].v = state.fade_state.curr_brightness;
+        curr_colour.v = state.fade_state.curr_brightness;
 
-        float_leds[state.fade_state.curr_led] = applyBounds(float_leds[state.fade_state.curr_led]);
-        CHSV hsv_out = CHSV(float_leds[state.fade_state.curr_led].h, float_leds[state.fade_state.curr_led].s, float_leds[state.fade_state.curr_led].v);
+        float_leds[state.fade_state.curr_led] = applyBounds(curr_colour);
+        HSV_uint8 hsv_uint = floatToFastLEDFormat(float_leds[state.fade_state.curr_led]);
+        CHSV hsv_out = CHSV(hsv_uint.h, hsv_uint.s, hsv_uint.v);
         // hsv2rgb_rainbow(hsv_out, rgb_out);       //retains more yellow
         CRGB rgb_out;
         hsv2rgb_spectrum(hsv_out, rgb_out);         //original colourspace for frosty fruit
@@ -158,6 +173,10 @@ public:
         // }
 
         leds[state.fade_state.curr_led] = rgb_out;
+
+        std::pair<int, int> bounce_result = bounce(state.fade_state.curr_led, state.fade_state.led_last_direction, 0, NUM_LEDS - 1, 1);
+        state.fade_state.curr_led = bounce_result.first;
+        state.fade_state.led_last_direction = bounce_result.second;
     }
 private:
     float h_min_;
@@ -184,13 +203,13 @@ void recieveCb(const uint8_t * mac_addr, const uint8_t *incomingData, int len) {
   Serial.println(local_state.brightness);
   Serial.println();
 
-//   if (local_state.state == 1) {
-//     toggleState();
-//   }
+  if (local_state.state == 1) {
+    toggleState();
+  }
 
-//   if(local_state.enable_web == 1){
-//     state.web_enabled = !state.web_enabled;
-//   }
+  if(local_state.enable_web == 1){
+    state.web_enabled = !state.web_enabled;
+  }
 }
 
 void runColourModifier(){
@@ -208,80 +227,89 @@ void runColourModifier(){
 }
 
 
+// This logic needs a rewrite, too hard to read
 
-void runStateModifier(){
-    switch (state.sys_state)
-    {
-    case SystemState::OFF:
-        break;
-    case SystemState::FADEIN:
-        // if(state.fade_state.curr_brightness == 0 && state.sys_state != SystemState::OFF){
-        //     state.fade_state.led_last_direction = !state.fade_state.led_last_direction;
-        //     state.fade_state.curr_brightness = state.brightness;
-        // }else if(state.sys_state == SystemState::OFF)
-        // {
-        state.fade_state.last_led=0;
-        float_leds[state.fade_state.last_led].v = state.brightness;
-        // first_led.v = state.brightness;first_led
-        state.fade_state.curr_led = 1;
-        state.fade_state.led_last_direction = -1;
-        state.fade_state.curr_brightness = state.brightness;
-    // }
-    // else if (state.fade_state.curr_brightness == state.brightness && state.fade_state.curr_led == NUM_LEDS)
-    // {
-        state.sys_state = SystemState::NOMINAL;
-        // }
-        break;
-    case SystemState::FADEOUT:
-        // if(state.fade_state.curr_brightness > 0){
-            state.fade_state.last_led=NUM_LEDS;
-            float_leds[state.fade_state.last_led].v = state.brightness;
-            // first_led.v = state.brightness;
-            state.fade_state.curr_led = NUM_LEDS - 1;
-            state.fade_state.led_last_direction = -1;
-            state.fade_state.curr_brightness = 0;
-        // }else if (state.fade_state.curr_brightness == 0 &&  state.fade_state.curr_led == 0)
-        // {
-            state.sys_state = SystemState::OFF;
-        // }
-        break;
-    case SystemState::NOMINAL:
-        break;
-    default:
-        Serial.println("UnknowUnknownn state somehow");
-        break;
-    }
-}
 
-// void setupWebServer(){
-//     #ifdef USE_INTRANET
-//     WiFi.begin(LOCAL_SSID, LOCAL_PASS);
-//     while (WiFi.status() != WL_CONNECTED) {
-//         delay(500);
-//         Serial.print(".");
+// void runStateModifier(){
+//     switch (state.sys_state)
+//     {
+//     case SystemState::OFF:
+//         break;
+//     case SystemState::FADEIN:
+//         if(state.fade_state.curr_brightness == 0 && state.sys_state != SystemState::OFF){
+//             state.fade_state.led_last_direction = !state.fade_state.led_last_direction;
+//             state.fade_state.curr_brightness = state.brightness;
+//         }else if(state.sys_state == SystemState::OFF)
+//         {
+//             state.fade_state.last_led=0;
+//             float_leds[state.fade_state.last_led].v = state.brightness;
+//             // first_led.v = state.brightness;first_led
+//             state.fade_state.curr_led = 1;
+//             state.fade_state.led_last_direction = -1;
+//             state.fade_state.curr_brightness = state.brightness;
+//         }
+//         else if (state.fade_state.curr_brightness == state.brightness && state.fade_state.curr_led == NUM_LEDS)
+//         {
+//             state.sys_state = SystemState::NOMINAL;
+//         }
+//         break;
+//     case SystemState::FADEOUT:
+//         if(state.fade_state.curr_brightness > 0){
+//             state.fade_state.last_led=NUM_LEDS;
+//             float_leds[state.fade_state.last_led].v = state.brightness;
+//             // first_led.v = state.brightness;
+//             state.fade_state.curr_led = NUM_LEDS - 1;
+//             state.fade_state.led_last_direction = -1;
+//             state.fade_state.curr_brightness = 0;
+//         }else if (state.fade_state.curr_brightness == 0 &&  state.fade_state.curr_led == 0)
+//         {
+//             state.sys_state = SystemState::OFF;
+//         }
+//         break;
+//     case SystemState::NOMINAL:
+//         break;
+//     default:
+//         Serial.println("UnknowUnknownn state somehow");
+//         break;
 //     }
-//     Serial.print("IP address: "); Serial.println(WiFi.localIP());
-//     assigned_ip = WiFi.localIP();
-//     #endif
-
-//     // if you don't have #define USE_INTRANET, here's where you will creat and access point
-//     // an intranet with no internet connection. But Clients can connect to your intranet and see
-//     // the web page you are about to serve up
-//     #ifndef USE_INTRANET
-//     // Replace with your network credentials
-//     WiFi.softAP(AP_SSID, AP_PASS);
-//     delay(100);
-//     WiFi.softAPConfig(PageIP, gateway, subnet);
-//     delay(100);
-//     assigned_ip = WiFi.softAPIP();
-//     Serial.print("IP address: "); Serial.println(assigned_ip);
-//     #endif
 // }
+
+void setupWebServer(){
+    #ifdef USE_INTRANET
+    WiFi.begin(LOCAL_SSID, LOCAL_PASS);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.print("IP address: "); Serial.println(WiFi.localIP());
+    assigned_ip = WiFi.localIP();
+    #endif
+
+    // if you don't have #define USE_INTRANET, here's where you will creat and access point
+    // an intranet with no internet connection. But Clients can connect to your intranet and see
+    // the web page you are about to serve up
+    #ifndef USE_INTRANET
+    // Replace with your network credentials
+    #define AP_SSID "ESP32-Access-Point"
+    #define AP_PASS "123456789"
+
+    WiFi.softAP(AP_SSID, AP_PASS);
+    delay(100);
+    // WiFi.softAPConfig(PageIP, gateway, subnet);
+    delay(100);
+    IPAddress assigned_ip;
+    assigned_ip = WiFi.softAPIP();
+    Serial.print("IP address: "); Serial.println(assigned_ip);
+    #endif
+}
 
 void setup() {
     Serial.begin(115200);
+    delay(1000); // give me time to bring up serial monitor
+    Serial.println("Starting up");
     FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
-
+    // WiFi.mode(WIFI_OFF);
+    // setupWebServer();
     // Initialise the NowComms library
     setupEspNow();
     registerReceiveCb(recieveCb);
@@ -291,6 +319,10 @@ void setup() {
     float h_max = 12.0f;
     float s_min = 238.0f;
     float s_max = 245.0f;
+    // float h_min = 7.5f;
+    // float h_max = 12.5f;
+    // float s_min = 228.0f;
+    // float s_max = 245.0f;
     
     float update_speed = 0.08f; //not used
     float h_increment = 0.1;
@@ -339,17 +371,16 @@ void checkLocalState(){
 }
 
 void loop() {
-    // checkLocalState();
-    // runColourModifier();
+    checkLocalState();
+    runColourModifier();
     // runStateModifier();
-    frosty_fruit.tick();
-    // leds[0] = CRGB(0,0,0);
     FastLED.show();
     printState(state);
     // printLEDsfast(leds, NUM_LEDS);
     // printLEDsHSV(float_leds, NUM_LEDS);
     // delay(1000);
-    delay(0.08*1000);
+    delay(100);
+
 }
 
 /*
@@ -386,7 +417,8 @@ Controller features:
         -- single for good
 
  todo list
-    ** Add and maange an expandable state struct
+    ** Adjust the lamp cad to use ESP32-S3 Seed
+
     ** Allow web server to update the state struct
     ** Test leds and webserver
     ** Change the light modifier to update all leds at the same time for cleaner effects
