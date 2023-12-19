@@ -11,6 +11,8 @@
 #include <WiFi.h>
 #include <WebServer.h>  // standard library
 
+#include "wifi_server.h"
+
 
 
 
@@ -44,6 +46,7 @@ LampState state;
 
 HSV_float float_leds[NUM_LEDS];
 CRGB leds[NUM_LEDS];
+
 class GentleColourChange {
 public:
     GentleColourChange(){
@@ -121,8 +124,12 @@ private:
 
 
 GentleColourChange frosty_fruit;
+LampWebPage web_page;
 
 LampControl local_state;
+
+hw_timer_t *led_update_timer = NULL;
+
 
 void recieveCb(const uint8_t * mac_addr, const uint8_t *incomingData, int len) {
 //   LampControl myData;
@@ -142,6 +149,7 @@ void recieveCb(const uint8_t * mac_addr, const uint8_t *incomingData, int len) {
     state.web_enabled = !state.web_enabled;
   }
 }
+
 
 void runColourModifier(){
     switch (state.colour_mode)
@@ -204,34 +212,13 @@ void runColourModifier(){
 //     }
 // }
 
-void setupWebServer(){
-    #ifdef USE_INTRANET
-    WiFi.begin(LOCAL_SSID, LOCAL_PASS);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
-    Serial.print("IP address: "); Serial.println(WiFi.localIP());
-    assigned_ip = WiFi.localIP();
-    #endif
-
-    // if you don't have #define USE_INTRANET, here's where you will creat and access point
-    // an intranet with no internet connection. But Clients can connect to your intranet and see
-    // the web page you are about to serve up
-    #ifndef USE_INTRANET
-    // Replace with your network credentials
-    #define AP_SSID "ESP32-Access-Point"
-    #define AP_PASS "123456789"
-
-    WiFi.softAP(AP_SSID, AP_PASS);
-    delay(100);
-    // WiFi.softAPConfig(PageIP, gateway, subnet);
-    delay(100);
-    IPAddress assigned_ip;
-    assigned_ip = WiFi.softAPIP();
-    Serial.print("IP address: "); Serial.println(assigned_ip);
-    #endif
+void IRAM_ATTR ledCallback(){
+    // runColourModifier();
+    // FastLED.show();
+    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
 }
+
+
 
 void setup() {
     Serial.begin(115200);
@@ -241,7 +228,9 @@ void setup() {
     // WiFi.mode(WIFI_OFF);
     // setupWebServer();
     // Initialise the NowComms library
-    setupEspNow();
+    // setupEspNow();
+    web_page.SetupServer();
+    pinMode(LED_BUILTIN, OUTPUT);
     registerReceiveCb(recieveCb);
     state = loadState();
     printState(state);
@@ -260,6 +249,13 @@ void setup() {
     frosty_fruit = GentleColourChange(NUM_LEDS, h_min, h_max, s_min, s_max, update_speed, h_increment, s_increment);
     frosty_fruit.initColour();
     printMACaddress();
+    web_page.printIp();
+
+    led_update_timer = timerBegin(0, 80, true);    //timer 0, div 80, is 1Mhz clock
+    timerAttachInterrupt(led_update_timer, &ledCallback, true);
+    timerAlarmWrite(led_update_timer, 1000000, true); //set time in us
+    timerAlarmEnable(led_update_timer);
+
 }
 
 void checkLocalState(){
@@ -267,24 +263,30 @@ void checkLocalState(){
         state.sys_state = toggleState(state.sys_state);
         local_state.state = 0;
     }
-
     if(local_state.enable_web == 1){
         state.web_enabled = !state.web_enabled;
         local_state.enable_web = 0;
     }
 }
 
+unsigned long cur_ms=millis();
+
 void loop() {
+    if (millis() - cur_ms > 100) {
+        cur_ms = millis();
+        runColourModifier();
+        FastLED.show();
+    }
     checkLocalState();
-    runColourModifier();
+    // runColourModifier();
     // runStateModifier();
-    FastLED.show();
-    printState(state);
+    // FastLED.show();
+    // printState(state);
     // printLEDsfast(leds, NUM_LEDS);
     // printLEDsHSV(float_leds, NUM_LEDS);
     // delay(1000);
-    delay(100);
-
+    web_page.tick();
+    delay(1);
 }
 
 /*
