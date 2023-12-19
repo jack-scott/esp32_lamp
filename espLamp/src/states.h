@@ -73,3 +73,16 @@ void printState(LampState state){
     Serial.print("Curr brightness: ");
     Serial.println(state.fade_state.curr_brightness);
 }
+
+
+SystemState toggleState(SystemState curr_state){
+    SystemState new_state;
+    if(curr_state == SystemState::OFF || curr_state == SystemState::FADEOUT){
+        new_state = SystemState::FADEIN;
+    }else{
+        new_state = SystemState::FADEOUT;
+    }
+    return new_state;
+}
+
+

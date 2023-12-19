@@ -2,6 +2,8 @@
 #include <FastLED.h>
 #include <custom_types.h>   
 #include <colour_utils.h>
+#include <custom_animations.h>
+
 #include <now_comms.h>
 #include <lamp_control_types.h>
 #include "states.h"
@@ -24,94 +26,31 @@
 // #define LED_PIN 6
 #endif
 
-#ifdef TENERGY_ESP32S3
+#ifdef TENERGY_ESP32S3  //prototype for plane
 #define NUM_LEDS 12
 #define LED_PIN 23
 #define FASTLED_ESP32_I2S
 #endif
 
+
+#ifdef SEEED_XIAO_ESP32S3
+#define NUM_LEDS 24
+#define LED_PIN 9
+#define FASTLED_ESP32_I2S
+#endif
+
+
 LampState state;
 
 HSV_float float_leds[NUM_LEDS];
 CRGB leds[NUM_LEDS];
-
-void toggleState(){
-    if(state.sys_state == SystemState::OFF || state.sys_state == SystemState::FADEOUT){
-        state.sys_state = SystemState::FADEIN;
-    }else{
-        state.sys_state = SystemState::FADEOUT;
-    }
-}
-
-int sweep(int input_val, int min, int max, int increment) {
-    if (increment <= 0) {
-        printf("Increment must be greater than 0\n");
-        return input_val;
-    }
-    if (input_val < min) {
-        input_val = min;
-    } else if (input_val < max) {
-        input_val += increment;
-    } else {
-        input_val = min;
-    }
-    return input_val;
-}
-
-float sweep(float input_val, float min, float max, float increment) {
-    if (increment <= 0) {
-        printf("Increment must be greater than 0\n");
-        return input_val;
-    }
-    if (input_val < min) {
-        input_val = min;
-    } else if (input_val < max) {
-        input_val += increment;
-    } else {
-        input_val = min;
-    }
-    return input_val;
-}
-
-
-std::pair<int, int> bounce(int input_val, int last_direction, int min, int max, int increment) {
-    if (input_val < max && last_direction == 1) {
-        input_val += increment;
-    } else if (input_val >= max && last_direction == 1) {
-        input_val -= increment;
-        last_direction = -1;
-    } else if (input_val > min && last_direction == -1) {
-        input_val -= increment;
-    } else if (input_val <= min && last_direction == -1) {
-        input_val += increment;
-        last_direction = 1;
-    }
-    return std::make_pair(input_val, last_direction);
-}
-
-
-std::pair<float, int> bounce(float input_val, int last_direction, float min, float max, float increment) {
-    if (input_val < max && last_direction == 1) {
-        input_val += increment;
-    } else if (input_val >= max && last_direction == 1) {
-        input_val -= increment;
-        last_direction = -1;
-    } else if (input_val > min && last_direction == -1) {
-        input_val -= increment;
-    } else if (input_val <= min && last_direction == -1) {
-        input_val += increment;
-        last_direction = 1;
-    }
-    return std::make_pair(input_val, last_direction);
-}
-
-HSV_float curr_colour = {0, 0, 0};
 class GentleColourChange {
 public:
     GentleColourChange(){
 
     }
-    GentleColourChange(float h_min, float h_max, float s_min, float s_max, float update_speed, float h_increment, float s_increment):
+    GentleColourChange(int num_leds, float h_min, float h_max, float s_min, float s_max, float update_speed, float h_increment, float s_increment):
+    num_leds_(num_leds),
     h_min_(h_min),
     h_max_(h_max),
     s_min_(s_min),
@@ -127,58 +66,48 @@ public:
         state.fade_state.curr_led = 0;
         float start_h = static_cast<float>(random(this->h_min_, this->h_max_));
         float start_s = static_cast<float>(random(this->s_min_, this->s_max_));
-        for (int i = 0; i < NUM_LEDS; i++) {
+        for (int i = 0; i < this->num_leds_; i++) {
             float_leds[i].h = start_h;
             float_leds[i].s = start_s;
             float_leds[i].v = state.fade_state.curr_brightness;
         }
-        curr_colour.h = start_h;
-        curr_colour.s = start_s;
-        curr_colour.v = state.fade_state.curr_brightness;
+        this->curr_colour.h = start_h;
+        this->curr_colour.s = start_s;
+        this->curr_colour.v = state.fade_state.curr_brightness;
     }
 
     void tick(){
-        
-        // Something wrong about how the last colour is tracked withthis logic, leads to colours staying around the
-        // same area for a while since the last colour is not updated properly
-
-        // int last_led_ind = 0;
-        // if (state.fade_state.curr_led > 0) {
-        //     last_led_ind = state.fade_state.curr_led - state.fade_state.led_last_direction;
-        // }
-        // Serial.print("last_led_ind: ");
-        // Serial.println(last_led_ind);
-        
-        HSV_float last_led = curr_colour;
+        HSV_float last_led = this->curr_colour;
 
         std::pair<float, int> bounce_h_result = bounce(last_led.h, state.fade_state.h_last_direction, this->h_min_, this->h_max_, this->h_increment_);
-        curr_colour.h = bounce_h_result.first;
+        this->curr_colour.h = bounce_h_result.first;
         state.fade_state.h_last_direction = bounce_h_result.second;
 
         std::pair<float, int> bounce_s_result = bounce(last_led.s, state.fade_state.s_last_direction, this->s_min_, this->s_max_, this->s_increment_);
-        curr_colour.s = bounce_s_result.first;
+        this->curr_colour.s = bounce_s_result.first;
         state.fade_state.s_last_direction = bounce_s_result.second;
 
 
-        curr_colour.v = state.fade_state.curr_brightness;
+        this->curr_colour.v = state.fade_state.curr_brightness;
 
-        float_leds[state.fade_state.curr_led] = applyBounds(curr_colour);
+        float_leds[state.fade_state.curr_led] = applyBounds(this->curr_colour);
+
+        //potentially i want to update curr_colour with the bounds here, but i dont think it matters
+
         HSV_uint8 hsv_uint = floatToFastLEDFormat(float_leds[state.fade_state.curr_led]);
         CHSV hsv_out = CHSV(hsv_uint.h, hsv_uint.s, hsv_uint.v);
         // hsv2rgb_rainbow(hsv_out, rgb_out);       //retains more yellow
         CRGB rgb_out;
         hsv2rgb_spectrum(hsv_out, rgb_out);         //original colourspace for frosty fruit
-        // }else{
-            // rgb_out = CRGB(0,0,0);
-        // }
 
         leds[state.fade_state.curr_led] = rgb_out;
 
-        std::pair<int, int> bounce_result = bounce(state.fade_state.curr_led, state.fade_state.led_last_direction, 0, NUM_LEDS - 1, 1);
+        std::pair<int, int> bounce_result = bounce(state.fade_state.curr_led, state.fade_state.led_last_direction, 0, this->num_leds_ - 1, 1);
         state.fade_state.curr_led = bounce_result.first;
         state.fade_state.led_last_direction = bounce_result.second;
     }
 private:
+    int num_leds_;
     float h_min_;
     float h_max_;
     float s_min_;
@@ -186,6 +115,8 @@ private:
     float update_speed_;
     float h_increment_;
     float s_increment_;
+    HSV_float curr_colour = {0, 0, 0};
+
 };
 
 
@@ -204,7 +135,7 @@ void recieveCb(const uint8_t * mac_addr, const uint8_t *incomingData, int len) {
   Serial.println();
 
   if (local_state.state == 1) {
-    toggleState();
+    state.sys_state = toggleState(state.sys_state);
   }
 
   if(local_state.enable_web == 1){
@@ -228,7 +159,6 @@ void runColourModifier(){
 
 
 // This logic needs a rewrite, too hard to read
-
 
 // void runStateModifier(){
 //     switch (state.sys_state)
@@ -327,40 +257,14 @@ void setup() {
     float update_speed = 0.08f; //not used
     float h_increment = 0.1;
     float s_increment = 0.05f;
-    frosty_fruit = GentleColourChange(h_min, h_max, s_min, s_max, update_speed, h_increment, s_increment);
+    frosty_fruit = GentleColourChange(NUM_LEDS, h_min, h_max, s_min, s_max, update_speed, h_increment, s_increment);
     frosty_fruit.initColour();
     printMACaddress();
 }
 
-void printLEDsHSV(HSV_float* leds, int num_leds){
-    for (int i = 0; i < num_leds; i++) {
-        Serial.print("LEDhsv: ");
-        Serial.print(i);
-        Serial.print(" H: ");
-        Serial.print(leds[i].h);
-        Serial.print(" S: ");
-        Serial.print(leds[i].s);
-        Serial.print(" V: ");
-        Serial.println(leds[i].v);
-    }
-}
-
-void printLEDsfast(CRGB* leds, int num_leds){
-    for (int i = 0; i < num_leds; i++) {
-        Serial.print("LED fast: ");
-        Serial.print(i);
-        Serial.print(" R: ");
-        Serial.print(leds[i].r);
-        Serial.print(" G: ");
-        Serial.print(leds[i].g);
-        Serial.print(" B: ");
-        Serial.println(leds[i].b);
-    }
-}
-
 void checkLocalState(){
     if (local_state.state == 1) {
-        toggleState();
+        state.sys_state = toggleState(state.sys_state);
         local_state.state = 0;
     }
 
@@ -428,5 +332,5 @@ Controller features:
     wifi settings here
     ** Look at controller wake on interrupt functions. might be hard to actually test or work on
     ** Save config to persistant memory
-
+    ** Fix the issue with serial print making everything slow when not connected 
 */
