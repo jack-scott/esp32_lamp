@@ -12,11 +12,14 @@
 #define LED_PIN 8
 #endif
 
-#ifdef EXTERNAL_WAKE
-esp_sleep_enable_ext0_wakeup(PIN_INPUT, 0)
+#ifdef SEEED_XIAO_ESP32C3
+#define PIN_INPUT 3
+#define VBAT_PIN 2
 #endif
 
-#define MILLI_TILL_SLEEP 1000
+
+#define MILLI_TILL_SLEEP 3000
+#define WAIT_FOR_SERIAL 1000
 
 // some dirty global stuff
 OneButton *button;
@@ -107,7 +110,11 @@ hw_timer_t* click_timer;
 
 void setup()
 {
-  delay(1000);
+  #ifdef EXTERNAL_WAKE
+  esp_deep_sleep_enable_gpio_wakeup(BIT(D1), ESP_GPIO_WAKEUP_GPIO_LOW);
+  #endif
+
+  delay(WAIT_FOR_SERIAL);
   //TODO: Setup a timer and callback to put the device back to sleep 
   Serial.begin(115200);
   Serial.println("One Button Example with custom input.");
@@ -118,8 +125,8 @@ void setup()
   pinMode(PIN_INPUT, INPUT);  //Note no internal pullup required as this has a hardware pullup
   #endif
 
-  #ifdef ALIEXPRESS_ESP32C3
-  pinMode(PIN_INPUT, INPUT_PULLUP);
+  #if defined(ALIEXPRESS_ESP32C3) || defined(SEEED_XIAO_ESP32C3)
+    pinMode(PIN_INPUT, INPUT_PULLUP);
   #endif
 
 // create the OneButton instance without a pin.
@@ -138,13 +145,16 @@ void setup()
   registerPeer(targetMacAddress);
 
   // digitalWrite(LED_PIN, HIGH);
+  #ifndef SEEED_XIAO_ESP32C3
   pinMode(LED_PIN, OUTPUT);
+  #endif
   click_timer = timerBegin(1, 128, 1000);
+  Serial.println("Enter loop..");
+
 } // setup()
 
 void loop()
 {
-  Serial.println("Loop..");
   // read your own source of input:
   bool isPressed = (digitalRead(PIN_INPUT) == LOW);
 
@@ -154,7 +164,7 @@ void loop()
   // call tick frequently with current push-state of the input
   button->tick(isPressed);
   #ifdef EXTERNAL_WAKE
-  if(timerReadMilis(click_timer) > MILLI_TILL_SLEEP ){
+  if(timerReadMilis(click_timer) > MILLI_TILL_SLEEP + WAIT_FOR_SERIAL ){
     sleepDevice();
   }
   #endif

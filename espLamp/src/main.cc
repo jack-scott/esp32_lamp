@@ -79,6 +79,7 @@ public:
         this->curr_colour.v = state.fade_state.curr_brightness;
     }
 
+    // TODO: Time how long this takes to run. Might be very slow
     void tick(){
         HSV_float last_led = this->curr_colour;
 
@@ -212,6 +213,8 @@ void runColourModifier(){
 //     }
 // }
 
+
+//TODO: Get led update running in here
 void IRAM_ATTR ledCallback(){
     // runColourModifier();
     // FastLED.show();
