@@ -25,6 +25,7 @@ typedef struct FadeState{
 typedef struct LampState {
     ColourMode colour_mode;
     SystemState sys_state;
+    SystemState last_sys_state;
     FadeState fade_state;
     uint8_t brightness;
     bool web_enabled;
@@ -34,6 +35,7 @@ typedef struct LampState {
 
 void loadDefaults(LampState& curr_state){
     curr_state.colour_mode = FROSTYFRUIT;
+    curr_state.last_sys_state = OFF;
     curr_state.sys_state = NOMINAL;
     curr_state.brightness = 50;
 
@@ -56,6 +58,8 @@ void printState(LampState state){
     Serial.println(state.colour_mode);
     Serial.print("Sys state:");
     Serial.println(state.sys_state);
+    Serial.print("Last sys state:");
+    Serial.println(state.last_sys_state);
     Serial.print("Brightness:");
     Serial.println(state.brightness);
     Serial.print("Web enabled: ");
@@ -74,15 +78,17 @@ void printState(LampState state){
     Serial.println(state.fade_state.curr_brightness);
 }
 
+void setSystemState(SystemState new_state, LampState& curr_state){
+    curr_state.last_sys_state = curr_state.sys_state;
+    curr_state.sys_state = new_state;
+}
 
-SystemState toggleState(SystemState curr_state){
-    SystemState new_state;
-    if(curr_state == SystemState::OFF || curr_state == SystemState::FADEOUT){
-        new_state = SystemState::FADEIN;
+void toggleSystemState(LampState& curr_state){
+    if(curr_state.sys_state == SystemState::OFF || curr_state.sys_state == SystemState::FADEOUT){
+        setSystemState(SystemState::FADEIN, curr_state);
     }else{
-        new_state = SystemState::FADEOUT;
+        setSystemState(SystemState::FADEOUT, curr_state);
     }
-    return new_state;
 }
 
 

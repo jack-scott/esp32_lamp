@@ -143,7 +143,7 @@ void recieveCb(const uint8_t * mac_addr, const uint8_t *incomingData, int len) {
   Serial.println();
 
 //   if (local_state.state == 1) {
-//     state.sys_state = toggleState(state.sys_state);
+//     state.sys_state = toggleSystemState(state.sys_state);
 //   }
 
 //   if(local_state.enable_web == 1){
@@ -232,24 +232,40 @@ void runStateModifier(){
     case SystemState::OFF:
         break;
     case SystemState::FADEIN:
-        if(state.fade_state.curr_brightness == 0){
+        Serial.println("############### FADEIN ###############");
+        printState(state);
+        if(state.fade_state.curr_brightness == 0 && state.last_sys_state == SystemState::OFF){ 
             state.fade_state.curr_led = 0;
             state.fade_state.led_last_direction = 1;
             state.fade_state.curr_brightness = state.brightness;
             initCurrColour();
-            state.sys_state = SystemState::NOMINAL;
+        }else if(state.fade_state.curr_brightness == 0 && state.last_sys_state == SystemState::FADEOUT){
+            state.fade_state.led_last_direction = 1;
+            state.fade_state.curr_brightness = state.brightness;
+        }else if (state.fade_state.curr_led == NUM_LEDS - 1)
+        {
+            setSystemState(SystemState::NOMINAL, state);
         }else{
-            state.sys_state = SystemState::NOMINAL; //this would be an error, should probably check for it and handle
+            runColourModifier();
         }
         break;
     case SystemState::FADEOUT:
+        Serial.println("############### FADEOUT ###############");
+        printState(state);
         if(state.fade_state.curr_brightness > 0){
-            state.fade_state.curr_led = NUM_LEDS - 1;
-            state.fade_state.led_last_direction = -1;
-            state.fade_state.curr_brightness = 0;
+            if(state.last_sys_state == SystemState::FADEIN){
+                state.fade_state.led_last_direction = -1;
+                state.fade_state.curr_brightness = 0;
+            }else{  // Ideally this is only happening when in NOMINAL state but this is safe from any system state
+                state.fade_state.curr_led = NUM_LEDS - 1;
+                state.fade_state.led_last_direction = -1;
+                state.fade_state.curr_brightness = 0;
+            }
         }else if (state.fade_state.curr_led == 0)
         {
-            state.sys_state = SystemState::OFF;
+            float_leds[state.fade_state.curr_led].v = 0;
+            leds[state.fade_state.curr_led] = CRGB(0, 0, 0);
+            setSystemState(SystemState::OFF, state);
         }else {
             float_leds[state.fade_state.curr_led].v = 0;
             leds[state.fade_state.curr_led] = CRGB(0, 0, 0);
@@ -315,7 +331,7 @@ void setup() {
 
 void checkLocalState(){
     if (local_state.state == 1) {
-        state.sys_state = toggleState(state.sys_state);
+        toggleSystemState(state);
         local_state.state = 0;
     }
     if(local_state.enable_web == 1){

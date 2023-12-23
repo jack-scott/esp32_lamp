@@ -3,7 +3,16 @@
 #include <now_comms.h>
 #include <lamp_control_types.h>
 
+#ifdef DEBUG_OUT
+  #define WAIT_FOR_SERIAL 1000
+#else
+  #define WAIT_FOR_SERIAL 0
+#endif
+
+#include <Debug.hpp>
+
 #include "config_loader.h"
+
 
 #ifdef CAMERA_MODEL_TTGO_T_CAMERA_PLUS
 #define PIN_INPUT 23
@@ -19,11 +28,8 @@
 #define VBAT_PIN 2
 #endif
 
-
 #define MILLI_TILL_SLEEP 3000
-#define WAIT_FOR_SERIAL 1000
 
-// some dirty global stuff
 OneButton *button;
 DeviceConfig myConfig;
 
@@ -32,7 +38,7 @@ int direction = 1;
 
 void fClicked()
 {
-  Serial.println("Click");
+  DEBUG("Click");
 }
 
 void fDoubleClicked()
@@ -41,7 +47,7 @@ void fDoubleClicked()
   lc.state = 1;
   lc.brightness = last_brightness;
   sendData(myConfig.targetMacAddress, (uint8_t*)&lc, sizeof(lc));
-  Serial.println("DoubleClick");
+  DEBUG("DoubleClick");
 }
 
 void fLongPressStart()
@@ -50,12 +56,12 @@ void fLongPressStart()
   lc.state = 0;
   lc.brightness = last_brightness;
   sendData(myConfig.targetMacAddress, (uint8_t*)&lc, sizeof(lc));
-  Serial.println("LongPressStart");
+  DEBUG("LongPressStart");
 }
 
 void fLongPressStop()
 {
-  Serial.println("LongPressStop");
+  DEBUG("LongPressStop");
 }
 
 void fDuringLongPress()
@@ -70,7 +76,7 @@ void fDuringLongPress()
   last_brightness = last_brightness + (direction * 5);
   lc.brightness = last_brightness;
   sendData(myConfig.targetMacAddress, (uint8_t*)&lc, sizeof(lc));
-  Serial.println("LongPress");
+  DEBUG("LongPress");
 }
 
 void ledShowStatus(int status) {
@@ -93,15 +99,14 @@ void ledShowStatus(int status) {
 
 
 void onTransmitCB(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  Serial.print("Last Packet Send Status: ");
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+  status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail";
+  DEBUG("Last Packet Send Status: " + status);
   ledShowStatus(status == ESP_NOW_SEND_SUCCESS ? 1 : 0);
 }
 
 
 void sleepDevice(){
-  Serial.println("Sleeping!!!!");
-  delay(1000);
+  DEBUG("Sleeping!!!!");
   esp_deep_sleep_start();
 }
 hw_timer_t* click_timer;
@@ -112,13 +117,10 @@ void setup()
   esp_deep_sleep_enable_gpio_wakeup(BIT(D1), ESP_GPIO_WAKEUP_GPIO_LOW);
   #endif
 
-  // delay(WAIT_FOR_SERIAL);
-  //TODO: Setup a timer and callback to put the device back to sleep 
+  delay(WAIT_FOR_SERIAL);
   Serial.begin(115200);
-  Serial.println("One Button Example with custom input.");
-  // timerAttachInterrupt(click_timer, sleepDevice, true);
 
-  // setup your own source of input
+  // Hardware based setup
   #ifdef CAMERA_MODEL_TTGO_T_CAMERA_PLUS
   pinMode(PIN_INPUT, INPUT);  //Note no internal pullup required as this has a hardware pullup
   #endif
@@ -127,13 +129,14 @@ void setup()
     pinMode(PIN_INPUT, INPUT_PULLUP);
   #endif
 
+
+  // load in per-device config
   if(!loadConfig(myConfig)){
-    Serial.println("Failed to load config correctly");
+    DEBUG("Failed to load config correctly");
   }
 
-// create the OneButton instance without a pin.
+  // setup button functionality
   button = new OneButton();
-
   button->attachClick(fClicked);
   button->attachDoubleClick(fDoubleClicked);
   button->setLongPressIntervalMs(500);
@@ -141,33 +144,42 @@ void setup()
   button->attachLongPressStop(fLongPressStop);
   button->attachDuringLongPress(fDuringLongPress);
 
+  // setup esp comms
   setupEspNow();
-
   registerTransmitCb(onTransmitCB);
   registerPeer(myConfig.targetMacAddress);
 
-  // digitalWrite(LED_PIN, HIGH);
-  #ifndef SEEED_XIAO_ESP32C3
+  #ifdef ALIEXPRESS_ESP32C3
   pinMode(LED_PIN, OUTPUT);
   #endif
-  click_timer = timerBegin(1, 128, 1000);
-  Serial.println("Enter loop..");
 
-} // setup()
+  #ifdef EXTERNAL_WAKE
+    click_timer = timerBegin(1, 128, true);
+
+    // Not sure why using the proper timerAttachInterrupt function doesn't work for me, seems to work fine just checking the
+    // timer value though??  
+    // timerAttachInterrupt(click_timer, sleepDevice, true);
+    // timerAlarmWrite(click_timer, MILLI_TILL_SLEEP + WAIT_FOR_SERIAL, false);
+    // timerAlarmEnable(click_timer);
+  #endif
+
+  DEBUG("Enter loop..");
+
+}
 
 void loop()
 {
-  // read your own source of input:
   bool isPressed = (digitalRead(PIN_INPUT) == LOW);
-
-  for (int i = 0; i < 20; i++) {
-    button->tick(isPressed);
+  
+  if(isPressed){
+    timerRestart(click_timer);
   }
-  // call tick frequently with current push-state of the input
+
   button->tick(isPressed);
+
   #ifdef EXTERNAL_WAKE
   if(timerReadMilis(click_timer) > MILLI_TILL_SLEEP + WAIT_FOR_SERIAL ){
     sleepDevice();
   }
   #endif
-} // loop()
+}

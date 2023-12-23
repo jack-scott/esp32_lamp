@@ -3,6 +3,7 @@
 
 #include <WiFi.h>
 #include <esp_now.h>
+#include <Debug.hpp>
 
 
 void setupEspNow()
@@ -10,21 +11,21 @@ void setupEspNow()
     WiFi.mode(WIFI_STA);
     String myMacAddress = WiFi.macAddress();
     String myIpAddress = WiFi.localIP().toString();
-    Serial.println("---- My details -----");
-    Serial.println("MAC: " + myMacAddress);
-    Serial.println("IP: " + myIpAddress);
+    DEBUG("---- My details -----");
+    DEBUG("MAC: " + myMacAddress);
+    DEBUG("IP: " + myIpAddress);
     //Init ESP-NOW
     if (esp_now_init() != ESP_OK) {
-      Serial.println("Error initializing ESP-NOW");
+      DEBUG("Error initializing ESP-NOW");
       return;
     }else{
-      Serial.println("ESP-NOW Initialized");
+      DEBUG("ESP-NOW Initialized");
     }
 }
 
 void printMACaddress(){
-  Serial.print("MAC address: ");
-  Serial.println(WiFi.macAddress());
+  DEBUG("MAC address: ");
+  DEBUG(WiFi.macAddress());
 }
 
 void registerReceiveCb(void (*onDataRecv)(const uint8_t*, const uint8_t*, int)){
@@ -45,10 +46,10 @@ bool registerPeer(const uint8_t *peerMACAddress){
   
   // Add peer        
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
-      Serial.println("Failed to add peer");
+      DEBUG("Failed to add peer");
       return 0;
   }else{
-      Serial.println("Peer added");
+      DEBUG("Peer added");
       return 1;
   }
 }
@@ -56,24 +57,24 @@ bool registerPeer(const uint8_t *peerMACAddress){
 void sendData(const uint8_t *peerMACAddress, const uint8_t *data, int len){
   esp_err_t result = esp_now_send(peerMACAddress, data, len);
   if (result == ESP_OK) {
-    Serial.println("Sent with success");
+    DEBUG("Sent with success");
   }
   else if (result == ESP_ERR_ESPNOW_NOT_INIT) {
-    Serial.println("ESPNOW not Init.");
+    DEBUG("ESPNOW not Init.");
   }
   else if (result == ESP_ERR_ESPNOW_ARG) {
-    Serial.println("Invalid Argument");
+    DEBUG("Invalid Argument");
   }
   else if (result == ESP_ERR_ESPNOW_INTERNAL) {
-    Serial.println("Internal Error");
+    DEBUG("Internal Error");
   }
   else if (result == ESP_ERR_ESPNOW_NO_MEM) {
-    Serial.println("ESP_ERR_ESPNOW_NO_MEM");
+    DEBUG("ESP_ERR_ESPNOW_NO_MEM");
   }
   else if (result == ESP_ERR_ESPNOW_NOT_FOUND) {
-    Serial.println("Peer not found.");
+    DEBUG("Peer not found.");
   }
   else {
-    Serial.println("Not sure what happened");
+    DEBUG("Not sure what happened");
   }
 }
