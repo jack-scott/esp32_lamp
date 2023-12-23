@@ -3,6 +3,8 @@
 #include <now_comms.h>
 #include <lamp_control_types.h>
 
+#include "config_loader.h"
+
 #ifdef CAMERA_MODEL_TTGO_T_CAMERA_PLUS
 #define PIN_INPUT 23
 #endif
@@ -23,11 +25,7 @@
 
 // some dirty global stuff
 OneButton *button;
-String myMacAddress = "";
-String myIpAddress = "";
-
-uint8_t targetMacAddress[] = {0x84, 0x0D, 0x8E, 0x39, 0xD6, 0x8C}; //tenergy
-// uint8_t targetMacAddress[] = {0xCC, 0x50, 0xE3, 0xB5, 0xF9, 0x38};
+DeviceConfig myConfig;
 
 uint8_t last_brightness = 50;
 int direction = 1;
@@ -42,7 +40,7 @@ void fDoubleClicked()
   LampControl lc;
   lc.state = 1;
   lc.brightness = last_brightness;
-  sendData(targetMacAddress, (uint8_t*)&lc, sizeof(lc));
+  sendData(myConfig.targetMacAddress, (uint8_t*)&lc, sizeof(lc));
   Serial.println("DoubleClick");
 }
 
@@ -51,7 +49,7 @@ void fLongPressStart()
   LampControl lc;
   lc.state = 0;
   lc.brightness = last_brightness;
-  sendData(targetMacAddress, (uint8_t*)&lc, sizeof(lc));
+  sendData(myConfig.targetMacAddress, (uint8_t*)&lc, sizeof(lc));
   Serial.println("LongPressStart");
 }
 
@@ -71,7 +69,7 @@ void fDuringLongPress()
   }
   last_brightness = last_brightness + (direction * 5);
   lc.brightness = last_brightness;
-  sendData(targetMacAddress, (uint8_t*)&lc, sizeof(lc));
+  sendData(myConfig.targetMacAddress, (uint8_t*)&lc, sizeof(lc));
   Serial.println("LongPress");
 }
 
@@ -114,7 +112,7 @@ void setup()
   esp_deep_sleep_enable_gpio_wakeup(BIT(D1), ESP_GPIO_WAKEUP_GPIO_LOW);
   #endif
 
-  delay(WAIT_FOR_SERIAL);
+  // delay(WAIT_FOR_SERIAL);
   //TODO: Setup a timer and callback to put the device back to sleep 
   Serial.begin(115200);
   Serial.println("One Button Example with custom input.");
@@ -129,6 +127,10 @@ void setup()
     pinMode(PIN_INPUT, INPUT_PULLUP);
   #endif
 
+  if(!loadConfig(myConfig)){
+    Serial.println("Failed to load config correctly");
+  }
+
 // create the OneButton instance without a pin.
   button = new OneButton();
 
@@ -142,7 +144,7 @@ void setup()
   setupEspNow();
 
   registerTransmitCb(onTransmitCB);
-  registerPeer(targetMacAddress);
+  registerPeer(myConfig.targetMacAddress);
 
   // digitalWrite(LED_PIN, HIGH);
   #ifndef SEEED_XIAO_ESP32C3

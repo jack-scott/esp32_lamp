@@ -1,5 +1,8 @@
 .vscode
 .DS_Store
+
+**/private_config.ini
+
 build
 make
 .pio

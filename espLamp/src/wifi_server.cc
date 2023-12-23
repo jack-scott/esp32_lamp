@@ -105,7 +105,7 @@ void LampWebPage::SetupServer() {
     // Replace with your network credentials
     WiFi.softAP(AP_SSID, AP_PASS);
     delay(100);
-    WiFi.softAPConfig(PageIP, gateway, subnet);
+    // WiFi.softAPConfig(PageIP, gateway, subnet);
     delay(100);
     assigned_ip = WiFi.softAPIP();
     Serial.print("IP address: "); Serial.println(assigned_ip);

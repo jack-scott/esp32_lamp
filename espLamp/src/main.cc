@@ -142,15 +142,28 @@ void recieveCb(const uint8_t * mac_addr, const uint8_t *incomingData, int len) {
   Serial.println(local_state.brightness);
   Serial.println();
 
-  if (local_state.state == 1) {
-    state.sys_state = toggleState(state.sys_state);
-  }
+//   if (local_state.state == 1) {
+//     state.sys_state = toggleState(state.sys_state);
+//   }
 
-  if(local_state.enable_web == 1){
-    state.web_enabled = !state.web_enabled;
-  }
+//   if(local_state.enable_web == 1){
+//     state.web_enabled = !state.web_enabled;
+//   }
 }
 
+void initCurrColour(){
+    switch (state.colour_mode)  
+    {
+    case ColourMode::FROSTYFRUIT:
+        frosty_fruit.initColour();
+        break;
+    case ColourMode::BLUE:
+        break;
+    default:
+        Serial.println("Unknown colour somehow");
+        break;
+    }
+}
 
 void runColourModifier(){
     switch (state.colour_mode)
@@ -213,6 +226,45 @@ void runColourModifier(){
 //     }
 // }
 
+void runStateModifier(){
+    switch (state.sys_state)
+    {
+    case SystemState::OFF:
+        break;
+    case SystemState::FADEIN:
+        if(state.fade_state.curr_brightness == 0){
+            state.fade_state.curr_led = 0;
+            state.fade_state.led_last_direction = 1;
+            state.fade_state.curr_brightness = state.brightness;
+            initCurrColour();
+            state.sys_state = SystemState::NOMINAL;
+        }else{
+            state.sys_state = SystemState::NOMINAL; //this would be an error, should probably check for it and handle
+        }
+        break;
+    case SystemState::FADEOUT:
+        if(state.fade_state.curr_brightness > 0){
+            state.fade_state.curr_led = NUM_LEDS - 1;
+            state.fade_state.led_last_direction = -1;
+            state.fade_state.curr_brightness = 0;
+        }else if (state.fade_state.curr_led == 0)
+        {
+            state.sys_state = SystemState::OFF;
+        }else {
+            float_leds[state.fade_state.curr_led].v = 0;
+            leds[state.fade_state.curr_led] = CRGB(0, 0, 0);
+            state.fade_state.curr_led--;
+        }
+        break;
+    case SystemState::NOMINAL:
+        runColourModifier();
+        break;
+    default:
+        Serial.println("UnknowUnknownn state somehow");
+        break;
+    }
+}
+
 
 //TODO: Get led update running in here
 void IRAM_ATTR ledCallback(){
@@ -231,8 +283,8 @@ void setup() {
     // WiFi.mode(WIFI_OFF);
     // setupWebServer();
     // Initialise the NowComms library
-    // setupEspNow();
-    web_page.SetupServer();
+    setupEspNow();
+    // web_page.SetupServer();
     pinMode(LED_BUILTIN, OUTPUT);
     registerReceiveCb(recieveCb);
     state = loadState();
@@ -252,7 +304,7 @@ void setup() {
     frosty_fruit = GentleColourChange(NUM_LEDS, h_min, h_max, s_min, s_max, update_speed, h_increment, s_increment);
     frosty_fruit.initColour();
     printMACaddress();
-    web_page.printIp();
+    // web_page.printIp();
 
     led_update_timer = timerBegin(0, 80, true);    //timer 0, div 80, is 1Mhz clock
     timerAttachInterrupt(led_update_timer, &ledCallback, true);
@@ -277,7 +329,8 @@ unsigned long cur_ms=millis();
 void loop() {
     if (millis() - cur_ms > 100) {
         cur_ms = millis();
-        runColourModifier();
+        runStateModifier();
+        // runColourModifier();
         FastLED.show();
     }
     checkLocalState();
@@ -288,7 +341,7 @@ void loop() {
     // printLEDsfast(leds, NUM_LEDS);
     // printLEDsHSV(float_leds, NUM_LEDS);
     // delay(1000);
-    web_page.tick();
+    // web_page.tick();
     delay(1);
 }
 

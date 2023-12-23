@@ -3,15 +3,13 @@
 #include <WiFi.h>
 #include <WebServer.h>  // standard library
 
-#define USE_INTRANET
-
 // replace this with your homes intranet connect parameters
 #define LOCAL_SSID "NetComm 4592"
 #define LOCAL_PASS "senahesumf"
 
 // once  you are read to go live these settings are what you client will connect to
-#define AP_SSID "ESP32-Access-Point"
-#define AP_PASS "123456789"
+#define AP_SSID "Lamp-Access-Point"
+#define AP_PASS "frostyfruit"
 
 
 class LampWebPage{
