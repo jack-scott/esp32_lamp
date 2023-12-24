@@ -19,9 +19,7 @@ public:
     void SendWebsite();
     void SendXML();
     void UpdateSlider();
-    void printIp(){
-        Serial.print("Webserver IP address: "); Serial.println(assigned_ip);
-    }
+    void printIp();
     void tick();
 
 private:

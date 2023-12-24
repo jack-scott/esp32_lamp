@@ -5,6 +5,7 @@
 #include <WiFi.h>
 #include <WebServer.h>  // standard library
 #include "index.h"      // this is the web page you will serve up
+#include <Debug.hpp>
 
 
 
@@ -15,7 +16,7 @@ LampWebPage::LampWebPage(){
 // code to send the main web page
 // PAGE_MAIN is a large char defined in index.h
 void LampWebPage::SendWebsite() {
-  Serial.println("sending web page");
+  DEBUG("sending web page");
   // you may have to play with this value, big pages need more porcessing time, and hence
   // a longer timeout that 200 ms
   server->send(200, "text/html", PAGE_MAIN);
@@ -42,7 +43,7 @@ void LampWebPage::SendXML() {
   // wanna see what the XML code looks like?
   // actually print it to the serial monitor and use some text editor to get the size
   // then pad and adjust char XML[2048]; above
-  // Serial.println(XML);
+  // DEBUG(XML);
 
   // you may have to play with this value, big pages need more porcessing time, and hence
   // a longer timeout that 200 ms
@@ -61,7 +62,7 @@ void LampWebPage::UpdateSlider() {
 
   // conver the string sent from the web page to an int
   brightness = t_state.toInt();
-  // Serial.print("UpdateSlider"); Serial.println(brightness);
+  // DEBUG("UpdateSlider"); DEBUG(brightness);
 
 
   // YOU MUST SEND SOMETHING BACK TO THE WEB PAGE--BASICALLY TO KEEP IT LIVE
@@ -92,9 +93,9 @@ void LampWebPage::SetupServer() {
     WiFi.begin(LOCAL_SSID, LOCAL_PASS);
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
-        Serial.print(".");
+        DEBUG(".");
     }
-    Serial.print("IP address: "); Serial.println(WiFi.localIP());
+    DEBUG("IP address: "); DEBUG(WiFi.localIP());
     assigned_ip = WiFi.localIP();
     #endif
 
@@ -108,7 +109,7 @@ void LampWebPage::SetupServer() {
     // WiFi.softAPConfig(PageIP, gateway, subnet);
     delay(100);
     assigned_ip = WiFi.softAPIP();
-    Serial.print("IP address: "); Serial.println(assigned_ip);
+    DEBUG("IP address: "); DEBUG(assigned_ip);
     #endif
 
     // these calls will handle data coming back from your web page
@@ -133,5 +134,9 @@ void LampWebPage::tick(){
   }
   counter++;
   server->handleClient();
+}
+
+void LampWebPage::printIp(){
+        DEBUG("Webserver IP address: "); DEBUG(assigned_ip);
 }
 

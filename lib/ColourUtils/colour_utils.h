@@ -4,6 +4,7 @@
 #include <algorithm> // Include the <algorithm> header for std::min and std::max
 #include <cmath>
 #include <cstdint> // Include the header file for uint8_t
+#include <Debug.hpp>
 
 HSV_uint8 floatToFastLEDFormat(HSV_float hsv_input){
     HSV_uint8 hsv_out;
@@ -24,26 +25,26 @@ HSV_float applyBounds(HSV_float hsv_input) {
 
 void printLEDsHSV(HSV_float* leds, int num_leds){
     for (int i = 0; i < num_leds; i++) {
-        Serial.print("LEDhsv: ");
-        Serial.print(i);
-        Serial.print(" H: ");
-        Serial.print(leds[i].h);
-        Serial.print(" S: ");
-        Serial.print(leds[i].s);
-        Serial.print(" V: ");
-        Serial.println(leds[i].v);
+        DEBUG("LEDhsv: ");
+        DEBUG(i);
+        DEBUG(" H: ");
+        DEBUG(leds[i].h);
+        DEBUG(" S: ");
+        DEBUG(leds[i].s);
+        DEBUG(" V: ");
+        DEBUG(leds[i].v);
     }
 }
 
 void printLEDsfast(CRGB* leds, int num_leds){
     for (int i = 0; i < num_leds; i++) {
-        Serial.print("LED fast: ");
-        Serial.print(i);
-        Serial.print(" R: ");
-        Serial.print(leds[i].r);
-        Serial.print(" G: ");
-        Serial.print(leds[i].g);
-        Serial.print(" B: ");
-        Serial.println(leds[i].b);
+        DEBUG("LED fast: ");
+        DEBUG(i);
+        DEBUG(" R: ");
+        DEBUG(leds[i].r);
+        DEBUG(" G: ");
+        DEBUG(leds[i].g);
+        DEBUG(" B: ");
+        DEBUG(leds[i].b);
     }
 }

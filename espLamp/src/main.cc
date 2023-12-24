@@ -13,8 +13,13 @@
 
 #include "wifi_server.h"
 
+#ifdef DEBUG_OUT
+  #define WAIT_FOR_SERIAL 1000
+#else
+  #define WAIT_FOR_SERIAL 0
+#endif
 
-
+#include <Debug.hpp>
 
 #ifdef CAMERA_MODEL_TTGO_T_CAMERA_PLUS
 #define NUM_LEDS 22
@@ -37,7 +42,7 @@
 
 #ifdef SEEED_XIAO_ESP32S3
 #define NUM_LEDS 24
-#define LED_PIN 9
+#define LED_PIN 4 //9
 #define FASTLED_ESP32_I2S
 #endif
 
@@ -136,11 +141,11 @@ void recieveCb(const uint8_t * mac_addr, const uint8_t *incomingData, int len) {
 //   LampControl myData;
   memcpy(&local_state, incomingData, sizeof(local_state));
   // Update the structures with the new incoming data
-  Serial.print("state: ");
-  Serial.println(local_state.state);
-  Serial.print("brightness: ");
-  Serial.println(local_state.brightness);
-  Serial.println();
+  DEBUG("state: ");
+  DEBUG(local_state.state);
+  DEBUG("brightness: ");
+  DEBUG(local_state.brightness);
+  DEBUG("");
 
 //   if (local_state.state == 1) {
 //     state.sys_state = toggleSystemState(state.sys_state);
@@ -160,7 +165,7 @@ void initCurrColour(){
     case ColourMode::BLUE:
         break;
     default:
-        Serial.println("Unknown colour somehow");
+        DEBUG("Unknown colour somehow");
         break;
     }
 }
@@ -174,7 +179,7 @@ void runColourModifier(){
     case ColourMode::BLUE:
         break;
     default:
-        Serial.println("Unknown colour somehow");
+        DEBUG("Unknown colour somehow");
         break;
     }
 }
@@ -221,7 +226,7 @@ void runColourModifier(){
 //     case SystemState::NOMINAL:
 //         break;
 //     default:
-//         Serial.println("UnknowUnknownn state somehow");
+//         DEBUG("UnknowUnknownn state somehow");
 //         break;
 //     }
 // }
@@ -232,7 +237,7 @@ void runStateModifier(){
     case SystemState::OFF:
         break;
     case SystemState::FADEIN:
-        Serial.println("############### FADEIN ###############");
+        DEBUG("############### FADEIN ###############");
         printState(state);
         if(state.fade_state.curr_brightness == 0 && state.last_sys_state == SystemState::OFF){ 
             state.fade_state.curr_led = 0;
@@ -250,7 +255,7 @@ void runStateModifier(){
         }
         break;
     case SystemState::FADEOUT:
-        Serial.println("############### FADEOUT ###############");
+        DEBUG("############### FADEOUT ###############");
         printState(state);
         if(state.fade_state.curr_brightness > 0){
             if(state.last_sys_state == SystemState::FADEIN){
@@ -276,7 +281,7 @@ void runStateModifier(){
         runColourModifier();
         break;
     default:
-        Serial.println("UnknowUnknownn state somehow");
+        DEBUG("UnknowUnknownn state somehow");
         break;
     }
 }
@@ -294,7 +299,7 @@ void IRAM_ATTR ledCallback(){
 void setup() {
     Serial.begin(115200);
     delay(1000); // give me time to bring up serial monitor
-    Serial.println("Starting up");
+    DEBUG("Starting up");
     FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
     // WiFi.mode(WIFI_OFF);
     // setupWebServer();

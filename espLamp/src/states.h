@@ -1,4 +1,5 @@
 #pragma once
+#include <Debug.hpp>
 
 enum ColourMode{
     FROSTYFRUIT,
@@ -54,28 +55,28 @@ LampState loadState(){
 }
 
 void printState(LampState state){
-    Serial.print("Colour: ");
-    Serial.println(state.colour_mode);
-    Serial.print("Sys state:");
-    Serial.println(state.sys_state);
-    Serial.print("Last sys state:");
-    Serial.println(state.last_sys_state);
-    Serial.print("Brightness:");
-    Serial.println(state.brightness);
-    Serial.print("Web enabled: ");
-    Serial.println(state.web_enabled);
+    DEBUG("Colour: ");
+    DEBUG(state.colour_mode);
+    DEBUG("Sys state:");
+    DEBUG(state.sys_state);
+    DEBUG("Last sys state:");
+    DEBUG(state.last_sys_state);
+    DEBUG("Brightness:");
+    DEBUG(state.brightness);
+    DEBUG("Web enabled: ");
+    DEBUG(state.web_enabled);
 
-    Serial.print("H dir: ");
-    Serial.println(state.fade_state.h_last_direction);
-    Serial.print("S dir: ");
-    Serial.println(state.fade_state.s_last_direction);
-    Serial.print("led dir: ");
+    DEBUG("H dir: ");
+    DEBUG(state.fade_state.h_last_direction);
+    DEBUG("S dir: ");
+    DEBUG(state.fade_state.s_last_direction);
+    DEBUG("led dir: ");
 
-    Serial.println(state.fade_state.led_last_direction);
-    Serial.print("Curr led: ");
-    Serial.println(state.fade_state.curr_led);
-    Serial.print("Curr brightness: ");
-    Serial.println(state.fade_state.curr_brightness);
+    DEBUG(state.fade_state.led_last_direction);
+    DEBUG("Curr led: ");
+    DEBUG(state.fade_state.curr_led);
+    DEBUG("Curr brightness: ");
+    DEBUG(state.fade_state.curr_brightness);
 }
 
 void setSystemState(SystemState new_state, LampState& curr_state){
