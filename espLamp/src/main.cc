@@ -21,6 +21,8 @@
 
 #include <Debug.hpp>
 
+#define USE_INTRANET
+
 #ifdef CAMERA_MODEL_TTGO_T_CAMERA_PLUS
 #define NUM_LEDS 22
 #define LED_PIN 23
@@ -185,52 +187,6 @@ void runColourModifier(){
 }
 
 
-// This logic needs a rewrite, too hard to read
-
-// void runStateModifier(){
-//     switch (state.sys_state)
-//     {
-//     case SystemState::OFF:
-//         break;
-//     case SystemState::FADEIN:
-//         if(state.fade_state.curr_brightness == 0 && state.sys_state != SystemState::OFF){
-//             state.fade_state.led_last_direction = !state.fade_state.led_last_direction;
-//             state.fade_state.curr_brightness = state.brightness;
-//         }else if(state.sys_state == SystemState::OFF)
-//         {
-//             state.fade_state.last_led=0;
-//             float_leds[state.fade_state.last_led].v = state.brightness;
-//             // first_led.v = state.brightness;first_led
-//             state.fade_state.curr_led = 1;
-//             state.fade_state.led_last_direction = -1;
-//             state.fade_state.curr_brightness = state.brightness;
-//         }
-//         else if (state.fade_state.curr_brightness == state.brightness && state.fade_state.curr_led == NUM_LEDS)
-//         {
-//             state.sys_state = SystemState::NOMINAL;
-//         }
-//         break;
-//     case SystemState::FADEOUT:
-//         if(state.fade_state.curr_brightness > 0){
-//             state.fade_state.last_led=NUM_LEDS;
-//             float_leds[state.fade_state.last_led].v = state.brightness;
-//             // first_led.v = state.brightness;
-//             state.fade_state.curr_led = NUM_LEDS - 1;
-//             state.fade_state.led_last_direction = -1;
-//             state.fade_state.curr_brightness = 0;
-//         }else if (state.fade_state.curr_brightness == 0 &&  state.fade_state.curr_led == 0)
-//         {
-//             state.sys_state = SystemState::OFF;
-//         }
-//         break;
-//     case SystemState::NOMINAL:
-//         break;
-//     default:
-//         DEBUG("UnknowUnknownn state somehow");
-//         break;
-//     }
-// }
-
 void runStateModifier(){
     switch (state.sys_state)
     {
@@ -304,8 +260,8 @@ void setup() {
     // WiFi.mode(WIFI_OFF);
     // setupWebServer();
     // Initialise the NowComms library
-    setupEspNow();
-    // web_page.SetupServer();
+    // setupEspNow();
+    web_page.SetupServer();
     pinMode(LED_BUILTIN, OUTPUT);
     registerReceiveCb(recieveCb);
     state = loadState();
@@ -345,6 +301,11 @@ void checkLocalState(){
     }
 }
 
+
+void checkWebState(){
+    state.brightness = state.fade_state.curr_brightness = web_page.getBrightness();
+}
+
 unsigned long cur_ms=millis();
 
 void loop() {
@@ -355,6 +316,7 @@ void loop() {
         FastLED.show();
     }
     checkLocalState();
+    checkWebState();
     // runColourModifier();
     // runStateModifier();
     // FastLED.show();
@@ -362,7 +324,7 @@ void loop() {
     // printLEDsfast(leds, NUM_LEDS);
     // printLEDsHSV(float_leds, NUM_LEDS);
     // delay(1000);
-    // web_page.tick();
+    web_page.tick();
     delay(1);
 }
 

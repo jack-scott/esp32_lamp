@@ -4,8 +4,8 @@
 #include <WebServer.h>  // standard library
 
 // replace this with your homes intranet connect parameters
-#define LOCAL_SSID "NetComm 4592"
-#define LOCAL_PASS "senahesumf"
+#define LOCAL_SSID "TelstraCE6AC7"
+#define LOCAL_PASS "97au32w8c6"
 
 // once  you are read to go live these settings are what you client will connect to
 #define AP_SSID "Lamp-Access-Point"
@@ -19,6 +19,9 @@ public:
     void SendWebsite();
     void SendXML();
     void UpdateSlider();
+    int getBrightness(){
+        return brightness;
+    }
     void printIp();
     void tick();
 

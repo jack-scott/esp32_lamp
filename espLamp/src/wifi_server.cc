@@ -86,6 +86,7 @@ void LampWebPage::UpdateSlider() {
 }
 
 
+
 void LampWebPage::SetupServer() {
     Serial.begin(115200);
     
