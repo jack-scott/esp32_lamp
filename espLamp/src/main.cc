@@ -132,6 +132,9 @@ private:
 
 
 GentleColourChange frosty_fruit;
+
+GentleColourChange blue;
+
 LampWebPage web_page;
 
 LampControl local_state;
@@ -165,6 +168,7 @@ void initCurrColour(){
         frosty_fruit.initColour();
         break;
     case ColourMode::BLUE:
+        blue.initColour();
         break;
     default:
         DEBUG("Unknown colour somehow");
@@ -179,6 +183,7 @@ void runColourModifier(){
         frosty_fruit.tick();
         break;
     case ColourMode::BLUE:
+        blue.tick();
         break;
     default:
         DEBUG("Unknown colour somehow");
@@ -291,6 +296,18 @@ void setup() {
     frosty_fruit = GentleColourChange(NUM_LEDS, h_min, h_max, s_min, s_max, update_speed, h_increment, s_increment);
     frosty_fruit.initColour();
 
+    h_min = 180.0f;
+    h_max = 290.0f;
+    s_min = 160.0f;
+    s_max = 220.0f;
+
+    h_increment = 1.0f;
+    s_increment = 3.0f;
+
+    blue = GentleColourChange(NUM_LEDS, h_min, h_max, s_min, s_max, update_speed, h_increment, s_increment);
+
+
+
     led_update_timer = timerBegin(0, 80, true);    //timer 0, div 80, is 1Mhz clock
     timerAttachInterrupt(led_update_timer, &ledCallback, true);
     timerAlarmWrite(led_update_timer, 1000000, true); //set time in us
@@ -309,9 +326,22 @@ void checkLocalState(){
     }
 }
 
+void updateBrightness(int brightness){
+    state.brightness = state.fade_state.curr_brightness = brightness;
+    FastLED.setBrightness(brightness);
+}
+
 
 void checkWebState(){
-    state.brightness = state.fade_state.curr_brightness = web_page.getBrightness();
+    int web_brightness = web_page.getBrightness();
+    if(state.brightness != web_brightness){
+        updateBrightness(web_brightness);
+    }
+    ColourMode web_colour = static_cast<ColourMode>(web_page.getTheme());
+    if (web_colour != state.colour_mode) {
+        state.colour_mode = web_colour;
+        initCurrColour();
+    }
 }
 
 unsigned long cur_ms=millis();

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef STATES_H
+#define STATES_H
+
 #include <Debug.hpp>
 
 enum ColourMode{
@@ -93,3 +95,4 @@ void toggleSystemState(LampState& curr_state){
 }
 
 
+#endif  

@@ -236,8 +236,8 @@ const char PAGE_MAIN[] PROGMEM = R"=====( <!DOCTYPE html>
         <col span="1" class="tablecol">
       </colgroup>
       <tr>
-        <td><div class="tabledata" style="background: linear-gradient(to bottom, hsla(317, 84%, 75%, 0.6) 0%, hsla(28, 97%, 68%,60%)  100%)" id = "frostyfruit"></div></td>
-        <td><div class="tabledata" style="background: linear-gradient(to bottom, hsla(249, 97%, 75%, 0.664) 0%, hsla(180, 91%, 50%, 0.6)  100%)" id = "ice"></div></td>
+        <td><div class="tabledata" onclick="UpdateTheme('frostyfruit')" style="background: linear-gradient(to bottom, hsla(317, 84%, 75%, 0.6) 0%, hsla(28, 97%, 68%,60%)  100%)" id = "frostyfruit"></div></td>
+        <td><div class="tabledata" onclick="UpdateTheme('blue')"  style="background: linear-gradient(to bottom, hsla(249, 97%, 75%, 0.664) 0%, hsla(180, 91%, 50%, 0.6)  100%)" id = "blue"></div></td>
         <td><div class="tabledata" style="background: linear-gradient(to bottom, hsla(39, 93%, 61%, 0.726) 0%, hsla(14, 97%, 62%, 0.6)  100%)" id = "sunset"></div></td>
       </tr>
       </table>
@@ -285,48 +285,54 @@ const char PAGE_MAIN[] PROGMEM = R"=====( <!DOCTYPE html>
       return xmlHttp;
     }
 
-    // function to handle button press from HTML code above
-    // and send a processing string back to server
-    // this processing string is use in the .on method
-    function ButtonPress0() {
-      var xhttp = new XMLHttpRequest(); 
-      var message;
-      // if you want to handle an immediate reply (like status from the ESP
-      // handling of the button press use this code
-      // since this button status from the ESP is in the main XML code
-      // we don't need this
-      // remember that if you want immediate processing feedbac you must send it
-      // in the ESP handling function and here
-      /*
-      xhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-          message = this.responseText;
-          // update some HTML data
-        }
-      }
-      */
+    // // function to handle button press from HTML code above
+    // // and send a processing string back to server
+    // // this processing string is use in the .on method
+    // function ButtonPress0() {
+    //   var xhttp = new XMLHttpRequest(); 
+    //   var message;
+    //   // if you want to handle an immediate reply (like status from the ESP
+    //   // handling of the button press use this code
+    //   // since this button status from the ESP is in the main XML code
+    //   // we don't need this
+    //   // remember that if you want immediate processing feedbac you must send it
+    //   // in the ESP handling function and here
+    //   /*
+    //   xhttp.onreadystatechange = function() {
+    //     if (this.readyState == 4 && this.status == 200) {
+    //       message = this.responseText;
+    //       // update some HTML data
+    //     }
+    //   }
+    //   */
        
-      xhttp.open("PUT", "BUTTON_0", false);
+    //   xhttp.open("PUT", "BUTTON_0", false);
+    //   xhttp.send();
+    // }
+
+
+    // // function to handle button press from HTML code above
+    // // and send a processing string back to server
+    // // this processing string is use in the .on method
+    // function ButtonPress1() {
+    //   var xhttp = new XMLHttpRequest(); 
+    //   /*
+    //   xhttp.onreadystatechange = function() {
+    //     if (this.readyState == 4 && this.status == 200) {
+    //       document.getElementById("button1").innerHTML = this.responseText;
+    //     }
+    //   }
+    //   */
+    //   xhttp.open("PUT", "BUTTON_1", false);
+    //   xhttp.send(); 
+    // }
+    
+    function UpdateTheme(value) {
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("PUT", "UPDATE_THEME?VALUE="+value, true);
       xhttp.send();
     }
 
-
-    // function to handle button press from HTML code above
-    // and send a processing string back to server
-    // this processing string is use in the .on method
-    function ButtonPress1() {
-      var xhttp = new XMLHttpRequest(); 
-      /*
-      xhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-          document.getElementById("button1").innerHTML = this.responseText;
-        }
-      }
-      */
-      xhttp.open("PUT", "BUTTON_1", false);
-      xhttp.send(); 
-    }
-    
     function UpdateSlider(value) {
       var xhttp = new XMLHttpRequest();
       // this time i want immediate feedback to the fan speed
@@ -359,23 +365,12 @@ const char PAGE_MAIN[] PROGMEM = R"=====( <!DOCTYPE html>
       var color = "#e8e8e8";
      
       // get the xml stream
-      xmlResponse=xmlHttp.responseXML;
+      // xmlResponse=xmlHttp.responseXML;
   
-      
-      // xmldoc = xmlResponse.getElementsByTagName("SWITCH");
-      message = xmldoc[0].firstChild.nodeValue;
-      // update the text in the table
-      if (message == 0){
-        document.getElementById("btn1").innerHTML="Turn ON";
-      }
-      else {
-        document.getElementById("btn1").innerHTML="Turn OFF";
-      }
 
-
-      xmldoc = xmlResponse.getElementsByTagName("COUNTER");
-      message = xmldoc[0].firstChild.nodeValue;
-      document.getElementById("counter").innerHTML=message;
+      // xmldoc = xmlResponse.getElementsByTagName("COUNTER");
+      // message = xmldoc[0].firstChild.nodeValue;
+      // document.getElementById("counter").innerHTML=message;
      }
   
     // general processing code for the web page to ask for an XML steam

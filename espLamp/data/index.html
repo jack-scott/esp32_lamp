@@ -236,8 +236,8 @@ again I hate strings, so char is it and this method let's us write naturally -->
         <col span="1" class="tablecol">
       </colgroup>
       <tr>
-        <td><div class="tabledata" style="background: linear-gradient(to bottom, hsla(317, 84%, 75%, 0.6) 0%, hsla(28, 97%, 68%,60%)  100%)" id = "frostyfruit"></div></td>
-        <td><div class="tabledata" style="background: linear-gradient(to bottom, hsla(249, 97%, 75%, 0.664) 0%, hsla(180, 91%, 50%, 0.6)  100%)" id = "ice"></div></td>
+        <td><div class="tabledata" onclick="UpdateTheme('frostyfruit')" style="background: linear-gradient(to bottom, hsla(317, 84%, 75%, 0.6) 0%, hsla(28, 97%, 68%,60%)  100%)" id = "frostyfruit"></div></td>
+        <td><div class="tabledata" onclick="UpdateTheme('blue')"  style="background: linear-gradient(to bottom, hsla(249, 97%, 75%, 0.664) 0%, hsla(180, 91%, 50%, 0.6)  100%)" id = "blue"></div></td>
         <td><div class="tabledata" style="background: linear-gradient(to bottom, hsla(39, 93%, 61%, 0.726) 0%, hsla(14, 97%, 62%, 0.6)  100%)" id = "sunset"></div></td>
       </tr>
       </table>
@@ -327,6 +327,12 @@ again I hate strings, so char is it and this method let's us write naturally -->
     //   xhttp.send(); 
     // }
     
+    function UpdateTheme(value) {
+      var xhttp = new XMLHttpRequest();
+      xhttp.open("PUT", "UPDATE_THEME?VALUE="+value, true);
+      xhttp.send();
+    }
+
     function UpdateSlider(value) {
       var xhttp = new XMLHttpRequest();
       // this time i want immediate feedback to the fan speed
@@ -359,12 +365,12 @@ again I hate strings, so char is it and this method let's us write naturally -->
       var color = "#e8e8e8";
      
       // get the xml stream
-      xmlResponse=xmlHttp.responseXML;
+      // xmlResponse=xmlHttp.responseXML;
   
 
-      xmldoc = xmlResponse.getElementsByTagName("COUNTER");
-      message = xmldoc[0].firstChild.nodeValue;
-      document.getElementById("counter").innerHTML=message;
+      // xmldoc = xmlResponse.getElementsByTagName("COUNTER");
+      // message = xmldoc[0].firstChild.nodeValue;
+      // document.getElementById("counter").innerHTML=message;
      }
   
     // general processing code for the web page to ask for an XML steam

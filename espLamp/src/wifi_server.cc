@@ -6,11 +6,14 @@
 #include <WebServer.h>  // standard library
 #include "index.h"      // this is the web page you will serve up
 #include <Debug.hpp>
-
+// #include "states.h"
 
 
 LampWebPage::LampWebPage(){
   server = new WebServer(80);
+  // LampState lamp_init_state;
+  // loadDefaults(lamp_init_state);
+  theme = 0;
 }
 
 // code to send the main web page
@@ -50,6 +53,26 @@ void LampWebPage::SendXML() {
   server->send(200, "text/xml", XML);
 
 
+}
+
+void LampWebPage::UpdateTheme(){
+  // many I hate strings, but wifi lib uses them...
+  String t_state = server->arg("VALUE");
+
+  if (t_state == "frostyfruit"){
+    theme = 0;
+  }else if (t_state == "blue"){
+    theme = 1;
+  }
+
+  DEBUG("UpdateTheme"); DEBUG(theme);
+
+  strcpy(buf, "");
+  sprintf(buf, "%d", theme);
+  sprintf(buf, buf);
+
+  // now send it back
+  server->send(200, "text/plain", buf); //Send web page
 }
 
 // function managed by an .on method to handle slider actions on the web page
@@ -125,6 +148,7 @@ void LampWebPage::SetupServer() {
     // as you can imagine you will need to code some javascript in your web page to send such strings
     // this process will be documented in the SuperMon.h web page code
     server->on("/UPDATE_SLIDER", [this]() {UpdateSlider();});
+    server->on("/UPDATE_THEME", [this]() {UpdateTheme();});
 
     server->begin();
 }
@@ -140,4 +164,3 @@ void LampWebPage::tick(){
 void LampWebPage::printIp(){
         DEBUG("Webserver IP address: "); DEBUG(assigned_ip);
 }
-
