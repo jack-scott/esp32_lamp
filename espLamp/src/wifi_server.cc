@@ -88,8 +88,7 @@ void LampWebPage::UpdateSlider() {
 
 
 void LampWebPage::SetupServer() {
-    Serial.begin(115200);
-    
+    #define USE_INTRANET
     #ifdef USE_INTRANET
     WiFi.begin(LOCAL_SSID, LOCAL_PASS);
     while (WiFi.status() != WL_CONNECTED) {
@@ -105,6 +104,7 @@ void LampWebPage::SetupServer() {
     // the web page you are about to serve up
     #ifndef USE_INTRANET
     // Replace with your network credentials
+    DEBUG("Creating access point");
     WiFi.softAP(AP_SSID, AP_PASS);
     delay(100);
     // WiFi.softAPConfig(PageIP, gateway, subnet);

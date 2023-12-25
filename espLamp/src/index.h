@@ -362,7 +362,7 @@ const char PAGE_MAIN[] PROGMEM = R"=====( <!DOCTYPE html>
       xmlResponse=xmlHttp.responseXML;
   
       
-      xmldoc = xmlResponse.getElementsByTagName("SWITCH");
+      // xmldoc = xmlResponse.getElementsByTagName("SWITCH");
       message = xmldoc[0].firstChild.nodeValue;
       // update the text in the table
       if (message == 0){

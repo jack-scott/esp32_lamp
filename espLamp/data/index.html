@@ -285,47 +285,47 @@ again I hate strings, so char is it and this method let's us write naturally -->
       return xmlHttp;
     }
 
-    // function to handle button press from HTML code above
-    // and send a processing string back to server
-    // this processing string is use in the .on method
-    function ButtonPress0() {
-      var xhttp = new XMLHttpRequest(); 
-      var message;
-      // if you want to handle an immediate reply (like status from the ESP
-      // handling of the button press use this code
-      // since this button status from the ESP is in the main XML code
-      // we don't need this
-      // remember that if you want immediate processing feedbac you must send it
-      // in the ESP handling function and here
-      /*
-      xhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-          message = this.responseText;
-          // update some HTML data
-        }
-      }
-      */
+    // // function to handle button press from HTML code above
+    // // and send a processing string back to server
+    // // this processing string is use in the .on method
+    // function ButtonPress0() {
+    //   var xhttp = new XMLHttpRequest(); 
+    //   var message;
+    //   // if you want to handle an immediate reply (like status from the ESP
+    //   // handling of the button press use this code
+    //   // since this button status from the ESP is in the main XML code
+    //   // we don't need this
+    //   // remember that if you want immediate processing feedbac you must send it
+    //   // in the ESP handling function and here
+    //   /*
+    //   xhttp.onreadystatechange = function() {
+    //     if (this.readyState == 4 && this.status == 200) {
+    //       message = this.responseText;
+    //       // update some HTML data
+    //     }
+    //   }
+    //   */
        
-      xhttp.open("PUT", "BUTTON_0", false);
-      xhttp.send();
-    }
+    //   xhttp.open("PUT", "BUTTON_0", false);
+    //   xhttp.send();
+    // }
 
 
-    // function to handle button press from HTML code above
-    // and send a processing string back to server
-    // this processing string is use in the .on method
-    function ButtonPress1() {
-      var xhttp = new XMLHttpRequest(); 
-      /*
-      xhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-          document.getElementById("button1").innerHTML = this.responseText;
-        }
-      }
-      */
-      xhttp.open("PUT", "BUTTON_1", false);
-      xhttp.send(); 
-    }
+    // // function to handle button press from HTML code above
+    // // and send a processing string back to server
+    // // this processing string is use in the .on method
+    // function ButtonPress1() {
+    //   var xhttp = new XMLHttpRequest(); 
+    //   /*
+    //   xhttp.onreadystatechange = function() {
+    //     if (this.readyState == 4 && this.status == 200) {
+    //       document.getElementById("button1").innerHTML = this.responseText;
+    //     }
+    //   }
+    //   */
+    //   xhttp.open("PUT", "BUTTON_1", false);
+    //   xhttp.send(); 
+    // }
     
     function UpdateSlider(value) {
       var xhttp = new XMLHttpRequest();
@@ -361,17 +361,6 @@ again I hate strings, so char is it and this method let's us write naturally -->
       // get the xml stream
       xmlResponse=xmlHttp.responseXML;
   
-      
-      xmldoc = xmlResponse.getElementsByTagName("SWITCH");
-      message = xmldoc[0].firstChild.nodeValue;
-      // update the text in the table
-      if (message == 0){
-        document.getElementById("btn1").innerHTML="Turn ON";
-      }
-      else {
-        document.getElementById("btn1").innerHTML="Turn OFF";
-      }
-
 
       xmldoc = xmlResponse.getElementsByTagName("COUNTER");
       message = xmldoc[0].firstChild.nodeValue;

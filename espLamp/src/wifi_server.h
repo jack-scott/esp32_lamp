@@ -4,8 +4,8 @@
 #include <WebServer.h>  // standard library
 
 // replace this with your homes intranet connect parameters
-#define LOCAL_SSID "TelstraCE6AC7"
-#define LOCAL_PASS "97au32w8c6"
+#define LOCAL_SSID "BigPond6CBA"
+#define LOCAL_PASS "2113504582"
 
 // once  you are read to go live these settings are what you client will connect to
 #define AP_SSID "Lamp-Access-Point"

@@ -14,7 +14,7 @@
 #include "wifi_server.h"
 
 #ifdef DEBUG_OUT
-  #define WAIT_FOR_SERIAL 1000
+  #define WAIT_FOR_SERIAL 5000
 #else
   #define WAIT_FOR_SERIAL 0
 #endif
@@ -254,16 +254,26 @@ void IRAM_ATTR ledCallback(){
 
 void setup() {
     Serial.begin(115200);
-    delay(1000); // give me time to bring up serial monitor
+    delay(WAIT_FOR_SERIAL); // give me time to bring up serial monitor
     DEBUG("Starting up");
     FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
     // WiFi.mode(WIFI_OFF);
     // setupWebServer();
     // Initialise the NowComms library
+    //ESP NOW SETUP
     // setupEspNow();
+    // registerReceiveCb(recieveCb);
+    // printMACaddress();
+    //-------------
+    //WEB SERVER SETUP
     web_page.SetupServer();
+    web_page.printIp();
+    web_page.printIp();
+
+    web_page.printIp();
+
+    //-------------
     pinMode(LED_BUILTIN, OUTPUT);
-    registerReceiveCb(recieveCb);
     state = loadState();
     printState(state);
     float h_min = 8.0f;
@@ -280,8 +290,6 @@ void setup() {
     float s_increment = 0.05f;
     frosty_fruit = GentleColourChange(NUM_LEDS, h_min, h_max, s_min, s_max, update_speed, h_increment, s_increment);
     frosty_fruit.initColour();
-    printMACaddress();
-    // web_page.printIp();
 
     led_update_timer = timerBegin(0, 80, true);    //timer 0, div 80, is 1Mhz clock
     timerAttachInterrupt(led_update_timer, &ledCallback, true);
