@@ -38,15 +38,15 @@ int direction = 1;
 
 void fClicked()
 {
+  LampControl lc;
+  lc.state = 1;
+  lc.brightness = last_brightness;
+  sendData(myConfig.targetMacAddress, (uint8_t*)&lc, sizeof(lc));
   DEBUG("Click");
 }
 
 void fDoubleClicked()
 {
-  LampControl lc;
-  lc.state = 1;
-  lc.brightness = last_brightness;
-  sendData(myConfig.targetMacAddress, (uint8_t*)&lc, sizeof(lc));
   DEBUG("DoubleClick");
 }
 
@@ -138,7 +138,7 @@ void setup()
   // setup button functionality
   button = new OneButton();
   button->attachClick(fClicked);
-  button->attachDoubleClick(fDoubleClicked);
+  // button->attachDoubleClick(fDoubleClicked);
   button->setLongPressIntervalMs(500);
   button->attachLongPressStart(fLongPressStart);
   button->attachLongPressStop(fLongPressStop);

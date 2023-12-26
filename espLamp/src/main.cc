@@ -42,7 +42,8 @@
 
 #ifdef SEEED_XIAO_ESP32S3
 #define NUM_LEDS 24
-#define LED_PIN 4 //9
+// #define LED_PIN 4 //send out
+#define LED_PIN 9 //proto
 #define FASTLED_ESP32_I2S
 #endif
 
