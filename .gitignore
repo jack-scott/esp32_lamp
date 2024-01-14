@@ -1,3 +1,6 @@
+*.stl
+*.gcode
+
 .vscode
 .DS_Store
 
